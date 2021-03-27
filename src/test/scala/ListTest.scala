@@ -114,4 +114,132 @@ class ListTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "length" when {
+    "given Nil" should {
+      "return 0" in {
+        List.length(Nil) should be(0)
+      }
+    }
+
+    "given one element" should {
+      "return 1" in {
+        List.length(List(1)) should be(1)
+      }
+    }
+
+    "given multiple elements" should {
+      "return list length" in {
+        List.length(List(1, 2, 4, 2, 1)) should be(5)
+      }
+    }
+  }
+
+  "foldLeft" when {
+    "given Nil" should {
+      "immediately return accumulator" in {
+        List.foldLeft(Nil: List[Int], 5)(_ + _) should be(5)
+      }
+    }
+
+    "given list of numbers" should {
+      "sum numbers" in {
+        List.foldLeft(List(1, 2, 4, 1, 2), 0)(_ + _) should be(10)
+      }
+
+      "return product" in {
+        List.foldLeft(List(5.0, 4.0, 0.5), 1.0)(_ * _)
+      }
+    }
+
+    "given large input" should {
+      "be stack safe" in {
+        var list: List[Int] = Nil
+        for (_ <- 0 to 10000)
+          list = Cons(1, list)
+
+        a[StackOverflowError] should be thrownBy List.foldRight(list, 0)(_ * _)
+        List.foldLeft(list, 1)(_ * _) should be(1)
+      }
+    }
+  }
+
+  "reverse" when {
+    "given Nil" should {
+      "return Nil" in {
+        List.reverse(Nil) should be(Nil)
+      }
+    }
+
+    "given one element" should {
+      "return that element" in {
+        List.reverse(List(1)) should be(List(1))
+      }
+    }
+
+    "given multiple elements" should {
+      "return reversed list" in {
+        List.reverse(List(1, 2, 3)) should be(List(3, 2, 1))
+      }
+    }
+  }
+
+  "foldRight2" when {
+    "given a list" should {
+      "return same results as foldRight" in {
+        val list = List(1, 2, 4)
+        val difference = (a: Int, b: Int) => b - a
+        val division = (a: Int, b: Int) => b / a
+        List.foldRight2(list, 0)(difference) should be(List.foldRight(list, 0)(difference))
+        List.foldRight2(list, 16)(division) should be(List.foldRight(list, 16)(division))
+      }
+
+      "be stack safe" in {
+        var list: List[Int] = Nil
+        for (_ <- 0 to 10000)
+          list = Cons(1, list)
+
+        noException should be thrownBy List.foldRight2(list, 0)(_ * _)
+      }
+    }
+  }
+
+  "append" when {
+    val nil = Nil: List[Int]
+    "given empty list" should {
+      "not change when appending Nil" in {
+        List.append(nil, nil) should be(nil)
+      }
+
+      "add one element" in {
+        List.append(nil, List(4)) should be(List(4))
+      }
+
+      "add multiple elements" in {
+        List.append(nil, List(4, 5)) should be(List(4, 5))
+      }
+    }
+
+    "given non empty list" should {
+      "not change when appending Nil" in {
+        List.append(List(1, 2, 3), nil) should be(List(1, 2, 3))
+      }
+
+      "add one element" in {
+        List.append(List(1, 2, 3), List(4)) should be(List(1, 2, 3, 4))
+      }
+
+      "add multiple elements" in {
+        List.append(List(1, 2, 3), List(4, 5)) should be(List(1, 2, 3, 4, 5))
+      }
+    }
+  }
+
+  "concat" when {
+    "given multiple lists" should {
+      "concat lists" in {
+        List.concat(List(Nil, List(1, 2), Nil, List(3, 4), Nil)) should be(List(1, 2, 3, 4))
+      }
+    }
+  }
 }

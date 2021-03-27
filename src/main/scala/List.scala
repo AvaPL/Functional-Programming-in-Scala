@@ -12,7 +12,7 @@ object List {
     case Cons(head, tail) => head + sum(tail)
   }
 
-  def product(ds: List[Double]): Double = ds match {
+  def product(doubles: List[Double]): Double = doubles match {
     case Nil => 1.0
     case Cons(0.0, _) => 0.0
     case Cons(head, tail) => head * product(tail)
@@ -42,12 +42,39 @@ object List {
     case _ => Nil
   }
 
-  def foldRight[A, B](as: List[A], z: B)(f: (A, B) => B): B = as match {
+  def foldRight[A, B](list: List[A], z: B)(f: (A, B) => B): B = list match {
     case Nil => z
     case Cons(head, tail) => f(head, foldRight(tail, z)(f))
   }
 
-  def apply[A](as: A*): List[A] =
-    if (as.isEmpty) Nil
-    else Cons(as.head, apply(as.tail: _*))
+  def sum2(ints: List[Int]): Int =
+    foldLeft(ints, 0)((x, y) => x + y)
+
+  def product2(doubles: List[Double]): Double =
+    foldLeft(doubles, 1.0)(_ * _)
+
+  def length[A](list: List[A]): Int =
+    foldLeft(list, 0)((length, _) => length + 1)
+
+  @tailrec
+  def foldLeft[A, B](list: List[A], z: B)(f: (B, A) => B): B = list match {
+    case Nil => z
+    case Cons(head, tail) => foldLeft(tail, f(z, head))(f)
+  }
+
+  def reverse[A](list: List[A]): List[A] =
+    foldLeft(list, Nil: List[A])((tail, head) => Cons(head, tail))
+
+  def foldRight2[A, B](list: List[A], z: B)(f: (A, B) => B): B =
+    foldLeft(reverse(list), z)((b, a) => f(a, b))
+
+  def append[A](list: List[A], toAppend: List[A]): List[A] =
+    foldRight(list, toAppend)(Cons(_, _))
+
+  def concat[A](listOfLists: List[List[A]]): List[A] =
+    foldLeft(listOfLists, Nil: List[A])(append)
+
+  def apply[A](elements: A*): List[A] =
+    if (elements.isEmpty) Nil
+    else Cons(elements.head, apply(elements.tail: _*))
 }

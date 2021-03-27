@@ -1,7 +1,7 @@
-import List.sum
+import List.{foldRight, sum}
 
 object Main extends App {
-  val x = List(1,2,3,4,5) match {
+  val x = List(1, 2, 3, 4, 5) match {
     case Cons(x, Cons(2, Cons(4, _))) => x
     case Nil => 42
     case Cons(x, Cons(y, Cons(3, Cons(4, _)))) => x + y
@@ -9,4 +9,6 @@ object Main extends App {
     case _ => 101
   }
   println(s"x = $x")
+
+  println(s"${foldRight(List(1, 2, 3), Nil: List[Int])(Cons(_, _))}")
 }
