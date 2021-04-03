@@ -1,4 +1,6 @@
-import Chapter2._
+package chapter2
+
+import chapter2.Chapter2._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

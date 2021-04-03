@@ -1,3 +1,5 @@
+package chapter3
+
 import scala.annotation.tailrec
 
 sealed trait List[+A]

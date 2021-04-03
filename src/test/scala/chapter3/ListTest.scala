@@ -1,7 +1,24 @@
+package chapter3
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class ListTest extends AnyWordSpec with Matchers {
+
+  "List" when {
+    "used in pattern matching" should {
+      "return 3" in {
+        val result = List(1, 2, 3, 4, 5) match {
+          case Cons(x, Cons(2, Cons(4, _))) => x
+          case Nil => 42
+          case Cons(x, Cons(y, Cons(3, Cons(4, _)))) => x + y
+          case Cons(h, t) => h + List.sum(t)
+          case _ => 101
+        }
+        result should be(3)
+      }
+    }
+  }
 
   "tail" when {
     "given Nil" should {
@@ -131,6 +148,14 @@ class ListTest extends AnyWordSpec with Matchers {
     "given multiple elements" should {
       "return list length" in {
         List.length(List(1, 2, 4, 2, 1)) should be(5)
+      }
+    }
+  }
+
+  "foldRight" when {
+    "used with Cons" should {
+      "return same list" in {
+        List.foldRight(List(1, 2, 3), Nil: List[Int])(Cons(_, _)) should be(List(1, 2, 3))
       }
     }
   }
