@@ -71,10 +71,50 @@ object List {
     foldLeft(reverse(list), z)((b, a) => f(a, b))
 
   def append[A](list: List[A], toAppend: List[A]): List[A] =
-    foldRight(list, toAppend)(Cons(_, _))
+    foldRight2(list, toAppend)(Cons(_, _))
 
   def concat[A](listOfLists: List[List[A]]): List[A] =
     foldLeft(listOfLists, Nil: List[A])(append)
+
+  def add1(ints: List[Int]): List[Int] =
+    foldRight2(ints, Nil: List[Int])((int, result) => Cons(int + 1, result))
+
+  def doubleToString(doubles: List[Double]): List[String] =
+    foldRight2(doubles, Nil: List[String])((double, result) => Cons(double.toString, result))
+
+  def map[A, B](list: List[A])(f: A => B): List[B] =
+    foldRight2(list, Nil: List[B])((element, result) => Cons(f(element), result))
+
+  def filter[A](list: List[A])(f: A => Boolean): List[A] =
+    flatMap(list)(element => if (f(element)) List(element) else Nil)
+
+  def flatMap[A, B](list: List[A])(f: A => List[B]): List[B] =
+    concat(map(list)(f))
+
+  def addPairwise(a: List[Int], b: List[Int]): List[Int] = (a, b) match {
+    case (Cons(headA, tailA), Cons(headB, tailB)) => Cons(headA + headB, addPairwise(tailA, tailB))
+    case (a, b) => if (a != Nil) a else b
+  }
+
+  def zipWith[A, B, C](a: List[A], b: List[B])(f: (A, B) => C): List[C] = (a, b) match {
+    case (Cons(headA, tailA), Cons(headB, tailB)) => Cons(f(headA, headB), zipWith(tailA, tailB)(f))
+    case _ => Nil
+  }
+
+  @tailrec
+  def hasSubsequence[A](list: List[A], subsequence: List[A]): Boolean = list match {
+    case list if startsWith(list, subsequence) => true
+    case Cons(_, tail) => hasSubsequence(tail, subsequence)
+    case Nil => false
+  }
+
+  @tailrec
+  def startsWith[A](list: List[A], subsequence: List[A]): Boolean = (list, subsequence) match {
+    case (Cons(headList, tailList), Cons(headSubsequence, tailSubsequence)) if headList == headSubsequence =>
+      startsWith(tailList, tailSubsequence)
+    case (_, Nil) => true
+    case _ => false
+  }
 
   def apply[A](elements: A*): List[A] =
     if (elements.isEmpty) Nil

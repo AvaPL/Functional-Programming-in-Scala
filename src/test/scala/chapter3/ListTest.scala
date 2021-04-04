@@ -267,4 +267,195 @@ class ListTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "add1" when {
+    "given Nil" should {
+      "return Nil" in {
+        List.add1(Nil) should be(Nil)
+      }
+    }
+
+    "given one element" should {
+      "return list with element incremented" in {
+        List.add1(List(1)) should be(List(2))
+      }
+    }
+
+    "given multiple elements" should {
+      "return list with each element incremented" in {
+        List.add1(List(1, 2, 3)) should be(List(2, 3, 4))
+      }
+    }
+  }
+
+  "doubleToString" when {
+    "given Nil" should {
+      "return Nil" in {
+        List.doubleToString(Nil) should be(Nil)
+      }
+    }
+
+    "given one element" should {
+      "return list with element converted to string" in {
+        List.doubleToString(List(1.0)) should be(List("1.0"))
+      }
+    }
+
+    "given multiple elements" should {
+      "return list with each element converted to string" in {
+        List.doubleToString(List(1.1, 2.52, 3.123)) should be(List("1.1", "2.52", "3.123"))
+      }
+    }
+  }
+
+  "map" when {
+    "given Nil" should {
+      "return Nil" in {
+        List.map(Nil)(identity) should be(Nil)
+      }
+    }
+
+    "given one element" should {
+      "return list with element squared" in {
+        List.map(List(0.5))(x => x * x) should be(List(0.25))
+      }
+
+      "return list with negative element" in {
+        List.map(List(1))(-_) should be(List(-1))
+      }
+    }
+
+    "given multiple elements" should {
+      "return list with each element squared" in {
+        List.map(List(1, 5, 0.5))(x => x * x) should be(List(1, 25, 0.25))
+      }
+
+      "return list with each element negated" in {
+        List.map(List(1, 5, -3))(-_) should be(List(-1, -5, 3))
+      }
+    }
+  }
+
+  "filter" when {
+    "given Nil" should {
+      "return Nil" in {
+        List.filter(Nil)(_ => true) should be(Nil)
+      }
+    }
+
+    "given multiple elements" should {
+      "not change list when predicate matches all elements" in {
+        List.filter(List(1, 5, 3))(_ < 10) should be(List(1, 5, 3))
+      }
+
+      "return Nil when no elements match predicate" in {
+        List.filter(List(1, 5, 3))(_ > 10) should be(Nil)
+      }
+
+      "return odd elements" in {
+        List.filter(List(1, -2, -3, 4, 5))(_ % 2 != 0) should be(List(1, -3, 5))
+      }
+    }
+  }
+
+  "flatMap" when {
+    "given a list" should {
+      "flatten the result" in {
+        val result = List.flatMap(List(1, 2, 3, 4, 5)) {
+          case 1 => Nil
+          case 3 => List(3)
+          case 5 => Nil
+          case i => List(i, i)
+        }
+        result should be(List(2, 2, 3, 4, 4))
+      }
+    }
+  }
+
+  "addPairwise" when {
+    "given two Nils" should {
+      "return Nil" in {
+        List.addPairwise(Nil, Nil) should be(Nil)
+      }
+    }
+
+    "given one Nil list" should {
+      "return left list" in {
+        List.addPairwise(List(1, 2, 3), Nil) should be(List(1, 2, 3))
+      }
+
+      "return right list" in {
+        List.addPairwise(Nil, List(1, 2, 3)) should be(List(1, 2, 3))
+      }
+    }
+
+    "given lists of equal sizes" should {
+      "sum corresponding elements" in {
+        List.addPairwise(List(1, 2, 3), List(5, 3, 1)) should be(List(6, 5, 4))
+      }
+    }
+
+    "given one longer list" should {
+      "sum corresponding elements and return remaining left list elements" in {
+        List.addPairwise(List(1, 2, 3), List(5)) should be(List(6, 2, 3))
+      }
+
+      "sum corresponding elements and return remaining right list elements" in {
+        List.addPairwise(List(5), List(1, 2, 3)) should be(List(6, 2, 3))
+      }
+    }
+  }
+
+  "zipWith" when {
+    "given two Nils" should {
+      "return Nil" in {
+        List.zipWith(Nil, Nil)((_, _) => 0) should be(Nil)
+      }
+    }
+
+    "given one Nil list" should {
+      "return Nil for right Nil list" in {
+        List.zipWith(List(1, 2, 3), Nil)((_, _) => 0) should be(Nil)
+      }
+
+      "return Nil for left Nil list" in {
+        List.zipWith(Nil, List(1, 2, 3))((_, _) => 0) should be(Nil)
+      }
+    }
+
+    "given lists of equal sizes" should {
+      "sum corresponding elements" in {
+        List.zipWith(List(1, 2, 3), List(5, 3, 1))(_ + _) should be(List(6, 5, 4))
+      }
+    }
+
+    "given one longer list" should {
+      "sum corresponding elements for right shorter list" in {
+        List.zipWith(List(1, 2, 3), List(5, 3))(_ + _) should be(List(6, 5))
+      }
+
+      "sum corresponding elements for left shorter list" in {
+        List.zipWith(List(5, 3), List(1, 2, 3))(_ + _) should be(List(6, 5))
+      }
+    }
+  }
+
+  "hasSubsequence" when {
+    "list does not contain subsequence" should {
+      "return false" in {
+        List.hasSubsequence(List(1, 2, 3, 4), List(3, 2)) should be(false)
+        List.hasSubsequence(Nil, List(1, 2)) should be(false)
+      }
+    }
+
+    "list contains subsequence" should {
+      "return true" in {
+        List.hasSubsequence(List(1, 2, 3, 4), List(1, 2)) should be(true)
+        List.hasSubsequence(List(1, 2, 3, 4), List(2, 3)) should be(true)
+        List.hasSubsequence(List(1, 2, 3, 4), List(4)) should be(true)
+        List.hasSubsequence(List(1, 2, 3, 4), Nil) should be(true)
+        List.hasSubsequence(Nil, Nil) should be(true)
+      }
+    }
+  }
 }
