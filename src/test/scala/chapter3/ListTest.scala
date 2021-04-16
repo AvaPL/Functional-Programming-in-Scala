@@ -15,6 +15,7 @@ class ListTest extends AnyWordSpec with Matchers {
           case Cons(h, t) => h + List.sum(t)
           case _ => 101
         }
+
         result should be(3)
       }
     }
@@ -215,6 +216,7 @@ class ListTest extends AnyWordSpec with Matchers {
         val list = List(1, 2, 4)
         val difference = (a: Int, b: Int) => b - a
         val division = (a: Int, b: Int) => b / a
+
         List.foldRight2(list, 0)(difference) should be(List.foldRight(list, 0)(difference))
         List.foldRight2(list, 16)(division) should be(List.foldRight(list, 16)(division))
       }
@@ -230,7 +232,9 @@ class ListTest extends AnyWordSpec with Matchers {
   }
 
   "append" when {
+
     val nil = Nil: List[Int]
+
     "given empty list" should {
       "not change when appending Nil" in {
         List.append(nil, nil) should be(nil)
@@ -367,6 +371,7 @@ class ListTest extends AnyWordSpec with Matchers {
           case 5 => Nil
           case i => List(i, i)
         }
+
         result should be(List(2, 2, 3, 4, 4))
       }
     }
