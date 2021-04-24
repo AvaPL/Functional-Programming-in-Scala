@@ -8,12 +8,6 @@ object Chapter4 {
     if (doubles.isEmpty) None
     else Some(doubles.sum / doubles.length)
 
-  def variance(doubles: Seq[Double]): Option[Double] = {
-    val doublesMean = mean(doubles)
-    doublesMean.map { mean =>
-      val dividend = doubles.map(_ - mean).map(pow(_, 2)).sum
-      val divisor = doubles.length
-      dividend / divisor
-    }
-  }
+  def variance(doubles: Seq[Double]): Option[Double] =
+    mean(doubles).flatMap(m => mean(doubles.map(_ - m).map(pow(_, 2))))
 }
