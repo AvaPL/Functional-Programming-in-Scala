@@ -1,7 +1,5 @@
 package chapter4
 
-import scala.collection.mutable.ListBuffer
-
 sealed trait Option[+A] {
 
   def map[B](f: A => B): Option[B] = this match {
