@@ -1,5 +1,7 @@
 package chapter5
 
+import chapter5.Stream.cons
+
 import scala.annotation.tailrec
 
 trait Stream[+A] {
@@ -29,9 +31,17 @@ trait Stream[+A] {
     case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
   }
 
-  def take(n: Int): Stream[A] = ???
+  def take(n: Int): Stream[A] = this match {
+    case Cons(head, tail) if n > 1 => cons(head(), tail().take(n - 1))
+    case Cons(head, _) if n == 1 => cons(head(), Empty)
+    case _ => Empty
+  }
 
-  def drop(n: Int): Stream[A] = ???
+  @tailrec
+  final def drop(n: Int): Stream[A] = this match {
+    case Cons(_, tail) if n > 0 => tail().drop(n - 1)
+    case _ => this
+  }
 
   def takeWhile(p: A => Boolean): Stream[A] = ???
 
@@ -58,7 +68,7 @@ object Stream {
     if (as.isEmpty) empty
     else cons(as.head, apply(as.tail: _*))
 
-  val ones: Stream[Int] = Stream.cons(1, ones)
+  val ones: Stream[Int] = cons(1, ones)
 
   def from(n: Int): Stream[Int] = ???
 
