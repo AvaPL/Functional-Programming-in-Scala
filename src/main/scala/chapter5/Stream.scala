@@ -18,17 +18,17 @@ trait Stream[+A] {
 
   def foldRight[B](z: => B)(f: (A, => B) => B): B =
     this match {
-      case Cons(h, t) => f(h(), t().foldRight(z)(f))
-      case _ => z
+      case Cons(head, tail) => f(head(), tail().foldRight(z)(f))
+      case Empty => z
     }
 
-  def exists(p: A => Boolean): Boolean =
-    foldRight(false)((a, b) => p(a) || b)
+  def exists(predicate: A => Boolean): Boolean =
+    foldRight(false)((a, b) => predicate(a) || b)
 
   @tailrec
-  final def find(f: A => Boolean): Option[A] = this match {
+  final def find(predicate: A => Boolean): Option[A] = this match {
     case Empty => None
-    case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
+    case Cons(h, t) => if (predicate(h())) Some(h()) else t().find(predicate)
   }
 
   def take(n: Int): Stream[A] = this match {
@@ -43,9 +43,16 @@ trait Stream[+A] {
     case _ => this
   }
 
-  def takeWhile(p: A => Boolean): Stream[A] = ???
+  def takeWhile(predicate: A => Boolean): Stream[A] =
+    foldRight(Empty: Stream[A]) { (element, result) =>
+      if (predicate(element)) cons(element, result) else Empty
+    }
 
-  def forAll(p: A => Boolean): Boolean = ???
+  @tailrec
+  final def forAll(predicate: A => Boolean): Boolean = this match {
+    case Cons(head, tail) => predicate(head()) && tail().forAll(predicate)
+    case Empty => true
+  }
 
   def headOption: Option[A] = ???
 
@@ -64,9 +71,9 @@ object Stream {
 
   def empty[A]: Stream[A] = Empty
 
-  def apply[A](as: A*): Stream[A] =
-    if (as.isEmpty) empty
-    else cons(as.head, apply(as.tail: _*))
+  def apply[A](elements: A*): Stream[A] =
+    if (elements.isEmpty) empty
+    else cons(elements.head, apply(elements.tail: _*))
 
   val ones: Stream[Int] = cons(1, ones)
 

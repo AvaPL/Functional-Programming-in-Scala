@@ -110,4 +110,62 @@ class StreamTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "takeWhile" when {
+    "given empty Stream" should {
+      "return empty Stream for always false predicate" in {
+        Stream.empty.takeWhile(_: Nothing => false).toList should be(Stream.empty.toList)
+      }
+
+      "return empty Stream for always true predicate" in {
+        Stream.empty.takeWhile(_: Nothing => true).toList should be(Stream.empty.toList)
+      }
+    }
+
+    "given Stream with elements" should {
+      "return empty Stream for always false predicate" in {
+        Stream(1, 2, 3).takeWhile(_ => false).toList should be(Stream.empty.toList)
+      }
+
+      "return initial Stream for always true predicate" in {
+        Stream(1, 2, 3).takeWhile(_ => true).toList should be(Stream(1, 2, 3).toList)
+      }
+
+      "return part of the Stream that matches predicate" in {
+        Stream(1, 2, 3, 2, 2).takeWhile(_ < 3).toList should be(Stream(1, 2).toList)
+      }
+    }
+  }
+
+  "forAll" when {
+    "used on empty Stream" should {
+      "return true for always false predicate" in {
+        Stream.empty.forAll(_: Nothing => false) should be(true)
+      }
+
+      "return true for always true predicate" in {
+        Stream.empty.forAll(_: Nothing => true) should be(true)
+      }
+    }
+
+    "used on nonempty Stream" should {
+      "return false for always false predicate" in {
+        Stream(1, 2, 3).forAll(_ => false) should be(false)
+      }
+
+      "return true for always true predicate" in {
+        Stream(1, 2, 3).forAll(_ => true) should be(true)
+      }
+
+      "return false for predicate that doesn't match all elements" in {
+        Stream(2, 4, 6, 7, 4).forAll(_ % 2 == 0) should be(false)
+      }
+    }
+
+    "used on infinite Stream" should {
+      "terminate early when as soon as predicate is false" in {
+        Stream.ones.forAll(_ == 2) should be(false)
+      }
+    }
+  }
 }
