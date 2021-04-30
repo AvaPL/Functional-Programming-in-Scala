@@ -1,6 +1,6 @@
 package chapter5
 
-import chapter5.Stream.cons
+import chapter5.Stream.{cons, empty}
 
 import scala.annotation.tailrec
 
@@ -28,7 +28,8 @@ trait Stream[+A] {
   @tailrec
   final def find(predicate: A => Boolean): Option[A] = this match {
     case Empty => None
-    case Cons(h, t) => if (predicate(h())) Some(h()) else t().find(predicate)
+    case Cons(head, tail) =>
+      if (predicate(head())) Some(head()) else tail().find(predicate)
   }
 
   def take(n: Int): Stream[A] = this match {
@@ -44,7 +45,7 @@ trait Stream[+A] {
   }
 
   def takeWhile(predicate: A => Boolean): Stream[A] =
-    foldRight(Empty: Stream[A]) { (element, result) =>
+    foldRight(Stream.empty[A]) { (element, result) =>
       if (predicate(element)) cons(element, result) else Empty
     }
 
@@ -54,10 +55,21 @@ trait Stream[+A] {
     case Empty => true
   }
 
-  def headOption: Option[A] = ???
+  def headOption: Option[A] =
+    foldRight(None: Option[A])((element, _) => Some(element))
 
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
+
+  def map[B](f: A => B): Stream[B] =
+    foldRight(Stream.empty[B])((element, result) => cons(f(element), result))
+
+  def filter(predicate: A => Boolean): Stream[A] = ???
+
+  def append[B >: A](toAppend: => B): Stream[B] =
+    foldRight(cons(toAppend, Empty))(cons(_, _))
+
+  def flatMap[B](f: A => Stream[B]): Stream[B] = ???
 
   def startsWith[B](s: Stream[B]): Boolean = ???
 }

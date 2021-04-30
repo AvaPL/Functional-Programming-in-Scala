@@ -168,4 +168,68 @@ class StreamTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "headOption" when {
+    "given empty Stream" should {
+      "return None" in {
+        Stream.empty.headOption should be(None)
+      }
+    }
+
+    "given stream with elements" should {
+      "return Some with first element" in {
+        Stream(1, 2, 3).headOption should be(Some(1))
+      }
+    }
+
+    "given infinite Stream" should {
+      "terminate early and return first value" in {
+        Stream.ones.headOption should be(Some(1))
+      }
+    }
+  }
+
+  "map" when {
+    "given empty Stream" should {
+      "return empty Stream" in {
+        Stream.empty.map(_: Nothing => "test").toList should be(Stream.empty.toList)
+      }
+    }
+
+    "given stream with elements" should {
+      "map all elements" in {
+        Stream(1, 2, 3).map(_.toString).toList should be(Stream("1", "2", "3").toList)
+      }
+    }
+
+    "given infinite Stream" should {
+      "map elements lazily (terminate immediately)" in {
+        Stream.ones.map(_ * 2).headOption should contain(2)
+      }
+    }
+  }
+
+  "append" when {
+    "given empty Stream" should {
+      "append one element" in {
+        Stream.empty.append(5).toList should be(Stream(5).toList)
+      }
+    }
+
+    "given Stream with elements" should {
+      "append one element" in {
+        Stream(1, 2, 3, 4).append(5).toList should be(Stream(1, 2, 3, 4, 5).toList)
+      }
+
+      "allow to append element with common supertype" in {
+        Stream(1, 2, 3, 4).append(5f).toList should be(Stream(1f, 2f, 3f, 4f, 5f).toList)
+      }
+    }
+
+    "given infinite Stream" should {
+      "append element lazily (terminate immediately)" in {
+        noException should be thrownBy Stream.ones.append(5)
+      }
+    }
+  }
 }
