@@ -209,6 +209,32 @@ class StreamTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "filter" when {
+    "given empty Stream" should {
+      "return empty Stream for always false predicate" in {
+        Stream.empty.filter(_: Nothing => false).toList should be(Stream.empty.toList)
+      }
+
+      "return empty Stream for always true predicate" in {
+        Stream.empty.filter(_: Nothing => true).toList should be(Stream.empty.toList)
+      }
+    }
+
+    "given Stream with elements" should {
+      "return empty Stream for always false predicate" in {
+        Stream(1, 2, 3).filter(_ => false).toList should be(Stream.empty.toList)
+      }
+
+      "return initial Stream for always true predicate" in {
+        Stream(1, 2, 3).filter(_ => true).toList should be(Stream(1, 2, 3).toList)
+      }
+
+      "return only matching elements" in {
+        Stream(1, 2, 3).filter(_ % 2 != 0).toList should be(Stream(1, 3).toList)
+      }
+    }
+  }
+
   "append" when {
     "given empty Stream" should {
       "append one element" in {
@@ -229,6 +255,53 @@ class StreamTest extends AnyWordSpec with Matchers {
     "given infinite Stream" should {
       "append element lazily (terminate immediately)" in {
         noException should be thrownBy Stream.ones.append(5)
+      }
+    }
+  }
+
+  "flatMap" when {
+    "given empty Stream" should {
+      "return empty Stream when function always returns empty Stream" in {
+        Stream.empty[Nothing].flatMap(_ => Stream.empty).toList should be(Stream.empty.toList)
+      }
+
+      "return empty Stream when function always returns Stream with elements" in {
+        Stream.empty[Nothing].flatMap(_ => Stream(1, 2, 3)).toList should be(Stream.empty.toList)
+      }
+    }
+
+    "given Stream with element" should {
+      "return empty Stream when function always returns Stream with elements" in {
+        Stream(1, 2, 3).flatMap(_ => Stream.empty).toList should be(Stream.empty.toList)
+      }
+
+      "return elements in same order when mapped to Stream with one element" in {
+        Stream(1, 2, 3).flatMap(Stream(_)).toList should be(Stream(1, 2, 3).toList)
+      }
+
+      "return flattened Stream when one element is mapped to multiple elements" in {
+        Stream(1, 2, 3).flatMap(i => Stream(List.fill(i)(i): _*)).toList should be(Stream(1, 2, 2, 3, 3, 3).toList)
+      }
+
+      "return elements in valid order" in {
+        Stream(1, 2).flatMap(i => Stream(8, i, 9)).toList should be(Stream(8, 1, 9, 8, 2, 9).toList)
+      }
+    }
+  }
+
+  "constant" when {
+    "given argument" should {
+      "generate infinite Stream of that element" in {
+        Stream.constant(5).take(100).toList should be(List.fill(100)(5))
+        Stream.constant("test").take(100).toList should be(List.fill(100)("test"))
+      }
+    }
+  }
+
+  "from" when {
+    "given an integer" should {
+      "generate infinite Stream of consecutive numbers" in {
+        Stream.from(5).take(5).toList should be(Stream(5, 6, 7, 8, 9).toList)
       }
     }
   }

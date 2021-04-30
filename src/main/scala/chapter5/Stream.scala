@@ -58,18 +58,22 @@ trait Stream[+A] {
   def headOption: Option[A] =
     foldRight(None: Option[A])((element, _) => Some(element))
 
-  // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
-  // writing your own function signatures.
-
   def map[B](f: A => B): Stream[B] =
     foldRight(Stream.empty[B])((element, result) => cons(f(element), result))
 
-  def filter(predicate: A => Boolean): Stream[A] = ???
+  def filter(predicate: A => Boolean): Stream[A] =
+    foldRight(Stream.empty[A]) { (element, result) =>
+      if (predicate(element)) cons(element, result) else result
+    }
 
   def append[B >: A](toAppend: => B): Stream[B] =
     foldRight(cons(toAppend, Empty))(cons(_, _))
 
-  def flatMap[B](f: A => Stream[B]): Stream[B] = ???
+  def flatMap[B](f: A => Stream[B]): Stream[B] =
+    foldRight(Stream.empty[B])(f(_).concat(_))
+
+  def concat[B >: A](toAppend: => Stream[B]): Stream[B] =
+    foldRight(toAppend)(cons(_, _))
 
   def startsWith[B](s: Stream[B]): Boolean = ???
 }
@@ -89,7 +93,12 @@ object Stream {
 
   val ones: Stream[Int] = cons(1, ones)
 
-  def from(n: Int): Stream[Int] = ???
+  def constant[A](element: A): Stream[A] = {
+    lazy val stream = cons(element, stream)
+    stream
+  }
+
+  def from(n: Int): Stream[Int] = cons(n, from(n + 1))
 
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = ???
 }
