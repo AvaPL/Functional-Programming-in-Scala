@@ -71,7 +71,7 @@ trait Stream[+A] {
   }
 
   lazy val headOption: Option[A] =
-    foldRight(None: Option[A])((element, _) => Some(element))
+    foldRight(Option.empty[A])((element, _) => Some(element))
 
   def map[B](f: A => B): Stream[B] =
     foldRight(Stream.empty[B])((element, result) => cons(f(element), result))
@@ -118,9 +118,13 @@ trait Stream[+A] {
   lazy val tails: Stream[Stream[A]] =
     scanRight(Stream.empty[A])(cons(_, _))
 
+  def hasSubsequence(subsequence: Stream[A]): Boolean =
+    tails.exists(_.startsWith(subsequence))
+
   def scanRight[B](z: => B)(f: (A, => B) => B): Stream[B] =
     foldRight(Stream(z)) { (element, result) =>
-      cons(f(element, result.headOption.get), result)
+      lazy val resultCached = result
+      cons(f(element, resultCached.headOption.get), resultCached)
     }
 }
 
