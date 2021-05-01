@@ -548,5 +548,11 @@ class StreamTest extends AnyWordSpec with Matchers {
         Stream(1, 1, 1).scanRight(0.0)((a, b) => (a + b).toFloat).toList should be(Stream(3, 2, 1, 0).toList)
       }
     }
+
+    "elements are never evaluated" should {
+      "not overflow" in {
+        noException should be thrownBy Stream.ones.scanRight(0)(_ + _)
+      }
+    }
   }
 }

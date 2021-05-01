@@ -116,22 +116,12 @@ trait Stream[+A] {
     }
 
   lazy val tails: Stream[Stream[A]] =
-    foldRight(Stream(Stream.empty[A])) { (element, result) =>
-      cons(cons(element, result.headOption.get), result)
-    }
+    scanRight(Stream.empty[A])(cons(_, _))
 
-  // 1   2   3   4   5
-  // 15  14  12  9   5   0
-  def scanRight[B](z: => B)(f: (A, => B) => B): Stream[B] = ???
-  //  {
-  //    lazy val zCached = z
-  //    var stepResult = z
-  //    foldRight(Stream.empty[B]) { (element, result) =>
-  //      stepResult = f(element, stepResult)
-  //      val stepResultCopy = stepResult
-  //      result.append(stepResultCopy)
-  //    }.append(zCached)
-  //  }
+  def scanRight[B](z: => B)(f: (A, => B) => B): Stream[B] =
+    foldRight(Stream(z)) { (element, result) =>
+      cons(f(element, result.headOption.get), result)
+    }
 }
 
 object Stream {
