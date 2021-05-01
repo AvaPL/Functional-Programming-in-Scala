@@ -118,7 +118,7 @@ trait Stream[+A] {
   lazy val tails: Stream[Stream[A]] =
     scanRight(Stream.empty[A])(cons(_, _))
 
-  def hasSubsequence(subsequence: Stream[A]): Boolean =
+  def hasSubsequence[B >: A](subsequence: Stream[B]): Boolean =
     tails.exists(_.startsWith(subsequence))
 
   def scanRight[B](z: => B)(f: (A, => B) => B): Stream[B] =
