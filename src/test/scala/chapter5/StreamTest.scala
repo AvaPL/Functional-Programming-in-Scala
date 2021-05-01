@@ -305,4 +305,248 @@ class StreamTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "fibs" when {
+    "called" should {
+      "generate infinite Stream of Fibonacci sequence" in {
+        Stream.fibs.take(10).toList should be(Stream(0, 1, 1, 2, 3, 5, 8, 13, 21, 34).toList)
+      }
+    }
+  }
+
+  "unfold" when {
+    "function always returns None" should {
+      "return empty Stream" in {
+        Stream.unfold(0)(_ => None).toList should be(Stream.empty.toList)
+      }
+    }
+
+    "function always returns Some" should {
+      "return infinite Stream" in {
+        Stream.unfold(0)(i => Some((i, i + 1))).take(10).toList should be(Stream(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).toList)
+      }
+    }
+
+    "function returns None at some point" should {
+      "return finite Stream" in {
+        Stream.unfold(0)(i => Option.when(i < 10)((i, i + 1))).toList should be(Stream(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).toList)
+      }
+    }
+  }
+
+  "onesViaUnfold" should {
+    "be same as ones" in {
+      Stream.onesViaUnfold.take(100).toList should be(Stream.ones.take(100).toList)
+    }
+  }
+
+  "constantViaUnfold" should {
+    "be same as constant" in {
+      Stream.constantViaUnfold(10).take(100).toList should be(Stream.constant(10).take(100).toList)
+    }
+  }
+
+  "fromViaUnfold" should {
+    "be same as from" in {
+      Stream.fromViaUnfold(5).take(100).toList should be(Stream.from(5).take(100).toList)
+    }
+  }
+
+  "fibsViaUnfold" should {
+    "be same as fibs" in {
+      Stream.fibsViaUnfold.take(100).toList should be(Stream.fibs.take(100).toList)
+    }
+  }
+
+  "mapViaUnfold" should {
+    "be same as map" in {
+      Stream(1, 2, 3).map(_ * 2).toList should be(Stream(2, 4, 6).toList)
+    }
+
+    "be lazily evaluated" in {
+      noException should be thrownBy Stream.ones.mapViaUnfold(_ * 2).take(100).toList
+    }
+  }
+
+  "takeViaUnfold" should {
+    "be same as take" in {
+      Stream.fibs.takeViaUnfold(100).toList should be(Stream.fibs.take(100).toList)
+    }
+  }
+
+  "takeWhileViaUnfold" should {
+    "be same as takeWhile" in {
+      Stream.fibs.takeWhileViaUnfold(_ < 1000).toList should be(Stream.fibs.takeWhile(_ < 1000).toList)
+    }
+  }
+
+  "zipWith" when {
+    "given two empty Streams" should {
+      "return empty Stream" in {
+        Stream.empty.zipWith(Stream.empty)((_: Nothing, _: Nothing) => 5).toList should be(Stream.empty.toList)
+      }
+    }
+
+    "given one empty Stream" should {
+      "return empty Stream for empty Stream on left" in {
+        Stream.empty.zipWith(Stream(1, 2, 3))((_: Nothing, _) => 5).toList should be(Stream.empty.toList)
+      }
+
+      "return empty Stream for empty Stream on right" in {
+        Stream(1, 2, 3).zipWith(Stream.empty)((_, _: Nothing) => 5).toList should be(Stream.empty.toList)
+      }
+    }
+
+    "given two nonempty Streams" should {
+      "zip two Streams of same length" in {
+        Stream(1, 2, 3).zipWith(Stream(4, 5, 6))(_ + _).toList should be(Stream(5, 7, 9).toList)
+      }
+
+      "zip two Streams for left shorter Stream" in {
+        Stream(1).zipWith(Stream(1, 2, 3))(_ + _).toList should be(Stream(2).toList)
+      }
+
+      "zip two Streams for right shorter Stream" in {
+        Stream(1, 2, 3).zipWith(Stream(2, 1))(_ + _).toList should be(Stream(3, 3).toList)
+      }
+    }
+  }
+
+  "zipAll" when {
+    "given two empty Streams" should {
+      "return empty Stream" in {
+        Stream.empty.zipAll(Stream.empty).toList should be(Stream.empty.toList)
+      }
+    }
+
+    "given one empty Stream" should {
+      "return empty Stream for empty Stream on left" in {
+        Stream.empty.zipAll(Stream(1, 2, 3)).toList should be(Stream((None, Some(1)), (None, Some(2)), (None, Some(3))).toList)
+      }
+
+      "return empty Stream for empty Stream on right" in {
+        Stream(1, 2, 3).zipAll(Stream.empty).toList should be(Stream((Some(1), None), (Some(2), None), (Some(3), None)).toList)
+      }
+    }
+
+    "given two nonempty Streams" should {
+      "zip two Streams of same length" in {
+        Stream(1, 2, 3).zipAll(Stream(4, 5, 6)).toList should be(Stream((Some(1), Some(4)), (Some(2), Some(5)), (Some(3), Some(6))).toList)
+      }
+
+      "zip two Streams for left shorter Stream" in {
+        Stream(1).zipAll(Stream(1, 2, 3)).toList should be(Stream((Some(1), Some(1)), (None, Some(2)), (None, Some(3))).toList)
+      }
+
+      "zip two Streams for right shorter Stream" in {
+        Stream(1, 2, 3).zipAll(Stream(2, 1)).toList should be(Stream((Some(1), Some(2)), (Some(2), Some(1)), (Some(3), None)).toList)
+      }
+    }
+  }
+
+  "startsWith" when {
+    "given two empty Streams" should {
+      "return true" in {
+        Stream.empty.startsWith(Stream.empty) should be(true)
+      }
+    }
+
+    "given nonempty Stream and empty prefix" should {
+      "return true" in {
+        Stream(1, 2, 3).startsWith(Stream.empty) should be(true)
+      }
+    }
+
+    "given nonempty Stream and nonempty prefix" should {
+      "return true when Stream starts with prefix" in {
+        Stream(1, 2, 3, 4, 5).startsWith(Stream(1, 2, 3)) should be(true)
+      }
+
+      "return false when Stream does not start with prefix" in {
+        Stream(1, 2, 3, 4, 5).startsWith(Stream(1, 8, 9)) should be(false)
+      }
+
+      "return false when matching prefix is longer than Stream" in {
+        Stream(1, 2, 3).startsWith(Stream(1, 2, 3, 4, 5)) should be(false)
+      }
+
+      "return true when Stream length is equal to matching prefix length" in {
+        Stream(1, 2, 3).startsWith(Stream(1, 2, 3)) should be(true)
+      }
+    }
+
+    "given infinite Stream and finite prefix" should {
+      "terminate and return true when the prefix matches" in {
+        Stream.from(1).startsWith(Stream(1, 2, 3)) should be(true)
+      }
+
+      "terminate and return false when prefix does not match" in {
+        Stream.from(1).startsWith(Stream(1, 5, 6)) should be(false)
+      }
+    }
+
+    "given finite Stream and infinite prefix" should {
+      "terminate and return false when matching prefix is longer than Stream" in {
+        Stream(1, 2, 3).startsWith(Stream.from(1)) should be(false)
+      }
+
+      "terminate and return false when the prefix does not match" in {
+        Stream(1, 2, 1).startsWith(Stream.from(1)) should be(false)
+      }
+    }
+
+    "given infinite Stream and infinite prefix" should {
+      "terminate and return false when prefix does not match" in {
+        Stream.from(1).startsWith(Stream.ones) should be(false)
+      }
+    }
+  }
+
+  def toListOfLists[A](stream: Stream[Stream[A]]): List[List[A]] = stream.toList.map(_.toList)
+
+  "tails" when {
+    "given empty Stream" should {
+      "return Stream with one empty Stream element" in {
+        toListOfLists(Stream.empty.tails) should be(toListOfLists(Stream(Stream.empty)))
+      }
+    }
+
+    "given nonempty Stream" should {
+      "return tails for one element" in {
+        toListOfLists(Stream(1).tails) should be(toListOfLists(Stream(Stream(1), Stream.empty)))
+      }
+
+      "return tails for multiple elements" in {
+        toListOfLists(Stream(1, 2, 3).tails) should be(toListOfLists(Stream(Stream(1, 2, 3), Stream(2, 3), Stream(3), Stream.empty)))
+      }
+    }
+
+    "given infinite Stream" should {
+      "terminate and return tails" in {
+        val tails = Stream.from(1).tails
+        val secondTail = tails.drop(1).headOption.get
+
+        val expectedSecondTail = Stream.from(2)
+        secondTail.take(100).toList should be(expectedSecondTail.take(100).toList)
+      }
+    }
+  }
+
+  "scanRight" when {
+    "given empty Stream" should {
+      "return initial accumulator value" in {
+        Stream.empty.scanRight(0)((_: Nothing, _) => 5).toList should be(Stream(0).toList)
+      }
+    }
+
+    "given nonempty Stream" should {
+      "scan and return intermediate results for one type" in {
+        Stream(1, 1, 1).scanRight(0)(_ + _).toList should be(Stream(3, 2, 1, 0).toList)
+      }
+
+      "scan and return intermediate results for multiple types" in {
+        Stream(1, 1, 1).scanRight(0.0)((a, b) => (a + b).toFloat).toList should be(Stream(3, 2, 1, 0).toList)
+      }
+    }
+  }
 }

@@ -1,6 +1,6 @@
 package chapter5
 
-import chapter5.Stream.{cons, empty}
+import chapter5.Stream.{cons, unfold}
 
 import scala.annotation.tailrec
 
@@ -38,6 +38,13 @@ trait Stream[+A] {
     case _ => Empty
   }
 
+  def takeViaUnfold(n: Int): Stream[A] =
+    unfold((this, n)) {
+      case (Cons(head, tail), n) if n > 1 => Some((head(), (tail(), n - 1)))
+      case (Cons(head, _), 1) => Some((head(), (Empty, 0)))
+      case _ => None
+    }
+
   @tailrec
   final def drop(n: Int): Stream[A] = this match {
     case Cons(_, tail) if n > 0 => tail().drop(n - 1)
@@ -49,17 +56,31 @@ trait Stream[+A] {
       if (predicate(element)) cons(element, result) else Empty
     }
 
+  def takeWhileViaUnfold(predicate: A => Boolean): Stream[A] =
+    unfold(this) {
+      case Cons(head, tail) =>
+        val headValue = head()
+        Option.when(predicate(headValue))((headValue, tail()))
+      case Empty => None
+    }
+
   @tailrec
   final def forAll(predicate: A => Boolean): Boolean = this match {
     case Cons(head, tail) => predicate(head()) && tail().forAll(predicate)
     case Empty => true
   }
 
-  def headOption: Option[A] =
+  lazy val headOption: Option[A] =
     foldRight(None: Option[A])((element, _) => Some(element))
 
   def map[B](f: A => B): Stream[B] =
     foldRight(Stream.empty[B])((element, result) => cons(f(element), result))
+
+  def mapViaUnfold[B](f: A => B): Stream[B] =
+    unfold(this) {
+      case Cons(head, tail) => Some(f(head()), tail())
+      case Empty => None
+    }
 
   def filter(predicate: A => Boolean): Stream[A] =
     foldRight(Stream.empty[A]) { (element, result) =>
@@ -75,7 +96,42 @@ trait Stream[+A] {
   def concat[B >: A](toAppend: => Stream[B]): Stream[B] =
     foldRight(toAppend)(cons(_, _))
 
-  def startsWith[B](s: Stream[B]): Boolean = ???
+  def zipWith[B, C](other: Stream[B])(f: (A, B) => C): Stream[C] =
+    unfold((this, other)) {
+      case (Cons(head1, tail1), Cons(head2, tail2)) =>
+        Some((f(head1(), head2()), (tail1(), tail2())))
+      case _ => None
+    }
+
+  def zipAll[B](other: Stream[B]): Stream[(Option[A], Option[B])] =
+    unfold((this, other)) {
+      case (Empty, Empty) => None
+      case (stream1, stream2) =>
+        Some((stream1.headOption, stream2.headOption), (stream1.drop(1), stream2.drop(1)))
+    }
+
+  def startsWith[B >: A](prefix: Stream[B]): Boolean =
+    zipAll(prefix).takeWhile(_._2.nonEmpty).forAll {
+      case (a, b) => a == b
+    }
+
+  lazy val tails: Stream[Stream[A]] =
+    foldRight(Stream(Stream.empty[A])) { (element, result) =>
+      cons(cons(element, result.headOption.get), result)
+    }
+
+  // 1   2   3   4   5
+  // 15  14  12  9   5   0
+  def scanRight[B](z: => B)(f: (A, => B) => B): Stream[B] = ???
+  //  {
+  //    lazy val zCached = z
+  //    var stepResult = z
+  //    foldRight(Stream.empty[B]) { (element, result) =>
+  //      stepResult = f(element, stepResult)
+  //      val stepResultCopy = stepResult
+  //      result.append(stepResultCopy)
+  //    }.append(zCached)
+  //  }
 }
 
 object Stream {
@@ -93,14 +149,39 @@ object Stream {
 
   val ones: Stream[Int] = cons(1, ones)
 
+  val onesViaUnfold: Stream[Int] = unfold(())(_ => Some(1, ()))
+
   def constant[A](element: A): Stream[A] = {
-    lazy val stream = cons(element, stream)
+    lazy val stream: Stream[A] = cons(element, stream)
     stream
   }
 
+  def constantViaUnfold[A](element: A): Stream[A] =
+    unfold(())(_ => Some(element, ()))
+
   def from(n: Int): Stream[Int] = cons(n, from(n + 1))
 
-  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = ???
+  def fromViaUnfold(n: Int): Stream[Int] =
+    unfold(n)(i => Some(i, i + 1))
+
+  val fibs: Stream[Int] = {
+    def loop(a: Int, b: Int): Stream[Int] = {
+      cons(a, loop(b, a + b))
+    }
+
+    loop(0, 1)
+  }
+
+  val fibsViaUnfold: Stream[Int] =
+    unfold((0, 1)) {
+      case (a, b) => Some(a, (b, a + b))
+    }
+
+  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] =
+    f(z) match {
+      case Some((element, z)) => cons(element, unfold(z)(f))
+      case None => Empty
+    }
 }
 
 case object Empty extends Stream[Nothing]
