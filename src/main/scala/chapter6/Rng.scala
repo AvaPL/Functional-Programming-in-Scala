@@ -36,10 +36,8 @@ object Rng {
     (abs(value % Int.MaxValue), rng2)
   }
 
-  def double(rng: Rng): (Double, Rng) = {
-    val (intValue, rng2) = nonNegativeInt(rng)
-    (intValue / (Int.MaxValue + 1.0), rng2)
-  }
+  def double(rng: Rng): (Double, Rng) =
+    map(nonNegativeInt)(_ / (Int.MaxValue + 1.0))(rng)
 
   def intDouble(rng: Rng): ((Int, Double), Rng) = {
     val (intValue, rng2) = rng.nextInt
@@ -62,15 +60,24 @@ object Rng {
     @tailrec
     def loop(count: Int, rng: Rng, result: List[Int] = Nil): (List[Int], Rng) = rng.nextInt match {
       case (value, rng) if count > 0 => loop(count - 1, rng, value :: result)
-      case (_, rng) => (result, rng)
+      case _ => (result.reverse, rng)
     }
 
     loop(count, rng)
   }
 
-  def map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = ???
+  def map2[A, B, C](randA: Rand[A], randB: Rand[B])(f: (A, B) => C): Rand[C] = {
+    rng =>
+      val (a, rng2) = randA(rng)
+      val (b, rng3) = randB(rng2)
+      (f(a, b), rng3)
+  }
 
-  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = ???
+  def sequence[A](rands: List[Rand[A]]): Rand[List[A]] =
+    rands.foldRight(unit(List.empty[A]))(map2(_, _)(_ :: _))
+
+  def intsViaSequence(count: Int)(rng: Rng): (List[Int], Rng) =
+    sequence(List.fill(count)((rng: Rng) => rng.nextInt))(rng)
 
   def flatMap[A, B](f: Rand[A])(g: A => Rand[B]): Rand[B] = ???
 }
