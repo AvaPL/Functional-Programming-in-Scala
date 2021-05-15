@@ -7,26 +7,22 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class RngTest extends AnyWordSpec with Matchers with MockFactory {
-  "nonNegativeInt" when {
-    "called" should {
-      "return non negative random value multiple times" in {
-        checkMultipleTimes(nonNegativeInt, (value: Int, _) => value should be >= 0)
-      }
+  "nonNegativeInt" should {
+    "return non negative random value multiple times" in {
+      checkMultipleTimes(nonNegativeInt, (value: Int, _) => value should be >= 0)
+    }
 
-      "return non negative value when Int.MinValue is returned from RNG" in {
-        val mockRng = mock[Rng]
-        (mockRng.nextInt _).expects().returning((Int.MinValue, mockRng))
+    "return non negative value when Int.MinValue is returned from RNG" in {
+      val mockRng = mock[Rng]
+      (mockRng.nextInt _).expects().returning((Int.MinValue, mockRng))
 
-        nonNegativeInt(mockRng)._1 should be >= 0
-      }
+      nonNegativeInt(mockRng)._1 should be >= 0
     }
   }
 
-  "double" when {
-    "called" should {
-      "return double between 0 and 1 multiple times" in {
-        checkMultipleTimes(double, (value: Double, _) => value should (be >= 0.0 and be < 1.0))
-      }
+  "double" should {
+    "return double between 0 and 1 multiple times" in {
+      checkMultipleTimes(double, (value: Double, _) => value should (be >= 0.0 and be < 1.0))
     }
   }
 
@@ -83,18 +79,16 @@ class RngTest extends AnyWordSpec with Matchers with MockFactory {
     }
   }
 
-  "map2" when {
-    "called" should {
-      "return result of mapping two random values" in {
-        val rng = Simple(0)
-        val (expectedA, rngA) = rng.nextInt
-        val (expectedB, rngB) = double(rngA)
+  "map2" should {
+    "return result of mapping two random values" in {
+      val rng = Simple(0)
+      val (expectedA, rngA) = rng.nextInt
+      val (expectedB, rngB) = double(rngA)
 
-        val (result, resultRng) = map2(_.nextInt, double)((a, b) => s"$a, $b")(rng)
+      val (result, resultRng) = map2(_.nextInt, double)((a, b) => s"$a, $b")(rng)
 
-        result should be(s"$expectedA, $expectedB")
-        resultRng should be(rngB)
-      }
+      result should be(s"$expectedA, $expectedB")
+      resultRng should be(rngB)
     }
   }
 
@@ -136,13 +130,29 @@ class RngTest extends AnyWordSpec with Matchers with MockFactory {
     }
   }
 
-  "intsViaSequence" when {
-    "called" should {
-      "give same results as ints" in {
-        val rng = Simple(0)
+  "intsViaSequence" should {
+    "give same results as ints" in {
+      val rng = Simple(0)
 
-        intsViaSequence(1000)(rng) should be(ints(1000)(rng))
+      intsViaSequence(1000)(rng) should be(ints(1000)(rng))
+    }
+  }
+
+  "flatMap" should {
+    "apply a function to result of first Rand" in {
+      val rng = Simple(0)
+      val rand = int
+      val expected = int(rng) match {
+        case (value, rng) => (value.toString, rng)
       }
+
+      flatMap(rand)(int => unit(int.toString))(rng) should be(expected)
+    }
+  }
+
+  "nonNegativeLessThan" should {
+    "return non negative number less than given one multiple times" in {
+      checkMultipleTimes(nonNegativeLessThan(20), (value: Int, _) => value should be < 20)
     }
   }
 

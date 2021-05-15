@@ -79,5 +79,12 @@ object Rng {
   def intsViaSequence(count: Int)(rng: Rng): (List[Int], Rng) =
     sequence(List.fill(count)((rng: Rng) => rng.nextInt))(rng)
 
-  def flatMap[A, B](f: Rand[A])(g: A => Rand[B]): Rand[B] = ???
+  def flatMap[A, B](f: Rand[A])(g: A => Rand[B]): Rand[B] = {
+    rng =>
+      val (a, rng2) = f(rng)
+      g(a)(rng2)
+  }
+
+  def nonNegativeLessThan(lessThan: Int)(rng: Rng): (Int, Rng) =
+    flatMap(nonNegativeInt)(int => unit(int % lessThan))(rng)
 }
