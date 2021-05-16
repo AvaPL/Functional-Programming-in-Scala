@@ -87,4 +87,10 @@ object Rng {
 
   def nonNegativeLessThan(lessThan: Int)(rng: Rng): (Int, Rng) =
     flatMap(nonNegativeInt)(int => unit(int % lessThan))(rng)
+
+  def mapViaFlatMap[A, B](rand: Rand[A])(f: A => B): Rand[B] =
+    flatMap(rand)(a => unit(f(a)))
+
+  def map2ViaFlatMap[A, B, C](randA: Rand[A], randB: Rand[B])(f: (A, B) => C): Rand[C] =
+    flatMap(randA)(a => map(randB)(b => f(a, b)))
 }

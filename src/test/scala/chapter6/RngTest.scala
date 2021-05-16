@@ -156,6 +156,23 @@ class RngTest extends AnyWordSpec with Matchers with MockFactory {
     }
   }
 
+  "mapViaFlatMap" should {
+    "give same result as map" in {
+      val rng = Simple(0)
+
+      mapViaFlatMap(int)(_.toString)(rng) should be(map(int)(_.toString)(rng))
+    }
+  }
+
+  "map2ViaFlatMap" should {
+    "give same result as map2" in {
+      val rng = Simple(0)
+      val intDoubleFunction = (a: Int, b: Double) => s"$a, $b"
+
+      map2ViaFlatMap(int, double)(intDoubleFunction)(rng) should be(map2(int, double)(intDoubleFunction)(rng))
+    }
+  }
+
   private def checkMultipleTimes[A](f: Rand[A], assertion: (A, Rng) => Assertion, rng: Rng = Simple(0), count: Int = 1000): Unit = {
     var currentRng = rng
     for (_ <- 0 until count) {
