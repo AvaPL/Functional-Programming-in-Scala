@@ -36,18 +36,19 @@ class ParTest extends AnyWordSpec with Matchers {
         a[TimeoutException] should be thrownBy execute(computation1, computation2, 150, TimeUnit.MILLISECONDS)
       }
     }
-  }
 
-  private def computation(result: Int, executionTime: Long, timeUnit: TimeUnit): Par[Int] =
-    _.submit {
-      () => {
-        timeUnit.sleep(executionTime)
-        result
+    def computation(result: Int, executionTime: Long, timeUnit: TimeUnit): Par[Int] =
+      _.submit {
+        () => {
+          timeUnit.sleep(executionTime)
+          result
+        }
       }
-    }
 
-  private def execute(a: Par[Int], b: Par[Int], timeout: Long, timeUnit: TimeUnit) = {
-    val executorService = Executors.newFixedThreadPool(4)
-    Par.map2(a, b, timeout, timeUnit)(_ + _)(executorService).get
+    def execute(a: Par[Int], b: Par[Int], timeout: Long, timeUnit: TimeUnit) = {
+      val executorService = Executors.newFixedThreadPool(2)
+      Par.map2(a, b, timeout, timeUnit)(_ + _)(executorService).get
+    }
   }
+
 }
