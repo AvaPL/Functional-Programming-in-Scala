@@ -51,4 +51,22 @@ class ParTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "asyncF" when {
+    "given identity function" should {
+      "return the input value" in {
+        execute(1)(identity) should be(1)
+      }
+    }
+
+    "given string conversion function" should {
+      "return an integer converted to string" in {
+        execute(1)(_.toString) should be("1")
+      }
+    }
+
+    def execute[A, B](a: A)(f: A => B) = {
+      val executorService = Executors.newFixedThreadPool(2)
+      Par.asyncF(f)(a)(executorService).get()
+    }
+  }
 }

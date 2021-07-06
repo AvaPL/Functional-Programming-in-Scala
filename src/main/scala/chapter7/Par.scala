@@ -13,7 +13,7 @@ object Par {
   // a constant value. It doesn't use the `ExecutorService` at all.
   // It's always done and can't be cancelled. Its `get` method simply
   // returns the value that we gave it.
-  def unit[A](a: A): Par[A] = (es: ExecutorService) => UnitFuture(a)
+  def unit[A](a: A): Par[A] = (_: ExecutorService) => UnitFuture(a)
 
   private case class UnitFuture[A](get: A) extends Future[A] {
     def isDone: Boolean = true
@@ -60,6 +60,10 @@ object Par {
     es => es.submit(new Callable[A] {
       def call: A = par(es).get
     })
+
+  def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
+
+  def asyncF[A, B](f: A => B): A => Par[B] = a => lazyUnit(f(a))
 
   def map[A, B](par: Par[A])(f: A => B): Par[B] =
     map2(par, unit(()))((a, _) => f(a))
