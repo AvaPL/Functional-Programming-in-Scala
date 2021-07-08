@@ -69,4 +69,34 @@ class ParTest extends AnyWordSpec with Matchers {
       Par.asyncF(f)(a)(executorService).get()
     }
   }
+
+  "sequence" when {
+    "given empty list" should {
+      "return empty list" in {
+        execute(Nil) shouldBe empty
+      }
+    }
+
+    "given list with one element" should {
+      "return list with one element" in {
+        val list = List(5)
+
+        execute(list) should be(list)
+      }
+    }
+
+    "given list with multiple elements" should {
+      "return list with elements in correct order" in {
+        val list = List(1, 5, 3)
+
+        execute(list) should be(list)
+      }
+    }
+
+    def execute[A](list: List[A]) = {
+      val listPar = list.map(Par.unit)
+      val executorService = Executors.newFixedThreadPool(2)
+      Par.sequence(listPar)(executorService).get
+    }
+  }
 }
