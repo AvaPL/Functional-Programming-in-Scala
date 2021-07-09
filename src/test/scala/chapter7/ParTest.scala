@@ -1,6 +1,6 @@
 package chapter7
 
-import chapter7.Par.Par
+import chapter7.Par.{Par, choice}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -142,6 +142,65 @@ class ParTest extends AnyWordSpec with Matchers {
     def execute[A](list: List[A])(f: A => Boolean) = {
       val executorService = Executors.newFixedThreadPool(2)
       Par.parFilter(list)(f)(executorService).get
+    }
+  }
+
+  "choice" when {
+    "given a condition that returns true" should {
+      "return true Par" in {
+        val condition = Par.unit(true)
+        val truePar = Par.unit(123)
+        val falsePar = Par.unit(321)
+
+        val result = execute(condition)(truePar, falsePar)
+
+        result should be(123)
+      }
+    }
+
+    "given a condition that returns false" should {
+      "return false Par" in {
+        val condition = Par.unit(false)
+        val truePar = Par.unit(123)
+        val falsePar = Par.unit(321)
+
+        val result = execute(condition)(truePar, falsePar)
+
+        result should be(321)
+      }
+    }
+
+    def execute[A](condition: Par[Boolean])(truePar: Par[A], falsePar: Par[A]) = {
+      val executorService = Executors.newFixedThreadPool(2)
+      Par.choice(condition)(truePar, falsePar)(executorService).get
+    }
+  }
+
+  "flatMap" when {
+    "given a Par and dependent Par function" should {
+      "return a non nested Par" in {
+        val parInt = Par.unit(5)
+
+        def parString(int: Int) = Par.unit(int.toString)
+
+        val executorService = Executors.newFixedThreadPool(2)
+        val result = Par.flatMap(parInt)(parString)(executorService).get
+
+        result should be("5")
+      }
+    }
+  }
+
+  "flatten" when {
+    "given a nested Par" should {
+      "unnest Par" in {
+        val nested = Par.unit(Par.unit(5))
+
+        val executorService = Executors.newFixedThreadPool(2)
+        val result = Par.flatten(nested)(executorService).get
+
+        result should be(5)
+      }
     }
   }
 }

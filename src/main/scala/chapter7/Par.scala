@@ -91,17 +91,12 @@ object Par {
   def delay[A](f: => Par[A]): Par[A] =
     es => f(es)
 
-  def choice[A](condition: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
-    es =>
-      if (run(es)(condition).get) t(es) // Notice we are blocking on the result of `cond`.
-      else f(es)
+  def choice[A](condition: Par[Boolean])(truePar: Par[A], falsePar: Par[A]): Par[A] =
+    flatMap(condition)(if (_) truePar else falsePar)
 
-  /* Gives us infix syntax for `Par`. */
-  implicit def toParOps[A](par: Par[A]): ParOps[A] = new ParOps(par)
+  def flatMap[A, B](par: Par[A])(f: A => Par[B]): Par[B] =
+    flatten(map(par)(f))
 
-  class ParOps[A](par: Par[A]) {
-
-
-  }
-
+  def flatten[A](par: Par[Par[A]]): Par[A] =
+    es => map(par)(_ (es).get)(es)
 }
