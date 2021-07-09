@@ -99,4 +99,49 @@ class ParTest extends AnyWordSpec with Matchers {
       Par.sequence(listPar)(executorService).get
     }
   }
+
+  "parFilter" when {
+    "given empty list" should {
+      "return empty list for always false predicate" in {
+        execute(Nil)(_ => false) shouldBe empty
+      }
+
+      "return empty list for always true predicate" in {
+        execute(Nil)(_ => true) shouldBe empty
+      }
+    }
+
+    "given list with one element" should {
+      "return empty list for always false predicate" in {
+        execute(List(5))(_ => false) shouldBe empty
+      }
+
+      "return initial list for always true predicate" in {
+        val list = List(5)
+
+        execute(list)(_ => true) should be(list)
+      }
+    }
+
+    "given list with multiple elements" should {
+      "return empty list for always false predicate" in {
+        execute(List(1, 5, 3))(_ => false) shouldBe empty
+      }
+
+      "return initial list for always true predicate" in {
+        val list = List(1, 5, 3)
+
+        execute(list)(_ => true) should be(list)
+      }
+
+      "filter matching elements from predicate" in {
+        execute(List(1, 5, 3, 5, 2))(_ != 5) should be(List(1, 3, 2))
+      }
+    }
+
+    def execute[A](list: List[A])(f: A => Boolean) = {
+      val executorService = Executors.newFixedThreadPool(2)
+      Par.parFilter(list)(f)(executorService).get
+    }
+  }
 }

@@ -79,6 +79,12 @@ object Par {
     listPar.foldRight(unit(List.empty[A]))(map2(_, _)(_ :: _))
   }
 
+  def parFilter[A](list: List[A])(f: A => Boolean): Par[List[A]] = {
+    val listParOption = list.map(asyncF(a => Option.when(f(a))(a)))
+    val parListOption = sequence(listParOption)
+    Par.map(parListOption)(_.flatten)
+  }
+
   def equal[A](es: ExecutorService)(p: Par[A], p2: Par[A]): Boolean =
     p(es).get == p2(es).get
 
