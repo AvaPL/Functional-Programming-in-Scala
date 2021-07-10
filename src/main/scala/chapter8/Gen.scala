@@ -2,11 +2,24 @@ package chapter8
 
 import chapter6.{Rng, State}
 
-case class Gen[A](sample: State[Rng, A])
+case class Gen[A](sample: State[Rng, A]) {
+  def flatMap[B](f: A => Gen[B]): Gen[B] = {
+    val state = sample.flatMap(f(_).sample)
+    Gen(state)
+  }
+
+  def listOfN(size: Gen[Int]): Gen[List[A]] = {
+    size.flatMap { size =>
+      val states = List.fill(size)(sample)
+      val state = State.sequence(states)
+      Gen(state)
+    }
+  }
+}
 
 object Gen {
   def choose(start: Int, stopExclusive: Int): Gen[Int] = {
-    val state = State[Rng, Int](_.nextInt).map(toRange(_, start, stopExclusive))
+    val state = State(Rng.int).map(toRange(_, start, stopExclusive))
     Gen(state)
   }
 
@@ -15,18 +28,25 @@ object Gen {
   }
 
   def unit[A](a: => A): Gen[A] = {
-    val state = State[Rng, A](Rng.unit(a))
+    val state = State(Rng.unit(a))
     Gen(state)
   }
 
   def boolean: Gen[Boolean] = {
-    val state = State[Rng, Double](Rng.double).map(_ < 0.5)
+    val state = State(Rng.double).map(_ < 0.5)
     Gen(state)
   }
 
-  def listOfN[A](n: Int, gen: Gen[A]): Gen[List[A]] = {
-    val states = List.fill(n)(gen.sample)
-    val state = State.sequence(states)
+  def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
+    weighted((g1, 1), (g2, 1))
+
+  def weighted[A](g1: (Gen[A], Double), g2: (Gen[A], Double)): Gen[A] = {
+    val totalWeight = g1._2.abs + g2._2.abs
+    val g1Probability = g1._2.abs / totalWeight
+    val state = State(Rng.double).flatMap { randomDouble =>
+      val chosenGen = if (randomDouble < g1Probability) g1 else g2
+      chosenGen._1.sample
+    }
     Gen(state)
   }
 }
