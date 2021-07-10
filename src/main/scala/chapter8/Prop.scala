@@ -11,19 +11,17 @@ case class Prop(run: (TestCases, Rng) => Result)
 object Prop {
   type TestCases = Int
 
-  def forAll[A](gen: Gen[A])(f: A => Boolean): Prop = {
+  def forAll[A](gen: Gen[A])(f: A => Boolean): Prop =
     Prop(ForAllPropChecker(gen, f, _).check(_))
-  }
 
   private case class ForAllPropChecker[A](gen: Gen[A], f: A => Boolean, testCases: TestCases) {
 
     def check(rng: Rng): Result =
       check(casesLeft = testCases, rng)
 
-    @tailrec // Intentionally left long to keep it tailrec
-    private def check(casesLeft: Int, rng: Rng): Result = {
-      if (casesLeft <= 0)
-        Passed
+    @tailrec
+    private def check(casesLeft: Int, rng: Rng): Result =
+      if (casesLeft <= 0) Passed
       else {
         val (generatedValue, rng2) = gen.sample.run(rng)
         val result = Try(f(generatedValue))
@@ -33,9 +31,8 @@ object Prop {
           case Failure(exception) => Falsified(failureMessage(generatedValue, exception), successes = testCases - casesLeft)
         }
       }
-    }
 
-    private def failureMessage(generatedValue: A): String =
+    private def failureMessage(generatedValue: A) =
       s"Property was falsified for value: $generatedValue"
 
     private def failureMessage(generatedValue: A, exception: Throwable) =
