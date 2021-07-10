@@ -13,4 +13,20 @@ object Gen {
   private[chapter8] def toRange(i: Int, start: Int, stopExclusive: Int) = {
     (i % (stopExclusive - start)) + start
   }
+
+  def unit[A](a: => A): Gen[A] = {
+    val state = State[Rng, A](Rng.unit(a))
+    Gen(state)
+  }
+
+  def boolean: Gen[Boolean] = {
+    val state = State[Rng, Double](Rng.double).map(_ < 0.5)
+    Gen(state)
+  }
+
+  def listOfN[A](n: Int, gen: Gen[A]): Gen[List[A]] = {
+    val states = List.fill(n)(gen.sample)
+    val state = State.sequence(states)
+    Gen(state)
+  }
 }
