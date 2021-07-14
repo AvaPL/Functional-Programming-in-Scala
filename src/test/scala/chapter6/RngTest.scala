@@ -173,6 +173,58 @@ class RngTest extends AnyWordSpec with Matchers with MockFactory {
     }
   }
 
+  "Deterministic" should {
+    "return valid first value" when {
+      "given a list of values" in {
+        val rng = Deterministic(2, 4, 6)
+
+        rng.nextInt._1 should be(2)
+      }
+    }
+
+    "return same value" when {
+      "given only one value" in {
+        val rng = Deterministic(5)
+
+        checkMultipleTimes(Rng.int, (value: Int, _) => value should be(5), rng)
+      }
+    }
+
+    "alternate between two values" when {
+      "given two values" in {
+        val rng = Deterministic(5, 10)
+
+        def assertion(value: Int, rng: Rng) = {
+          val nextValue = value match {
+            case 5 => 10
+            case 10 => 5
+          }
+          rng.nextInt._1 should be(nextValue)
+        }
+
+        checkMultipleTimes(Rng.int, assertion, rng)
+      }
+    }
+
+    "loop over list of values" when {
+      "given a list of values" in {
+        val rng = Deterministic(5, 10, 15, 20)
+
+        def assertion(value: Int, rng: Rng) = {
+          val nextValue = value match {
+            case 5 => 10
+            case 10 => 15
+            case 15 => 20
+            case 20 => 5
+          }
+          rng.nextInt._1 should be(nextValue)
+        }
+
+        checkMultipleTimes(Rng.int, assertion, rng)
+      }
+    }
+  }
+
   private def checkMultipleTimes[A](f: Rand[A], assertion: (A, Rng) => Assertion, rng: Rng = Simple(0), count: Int = 1000): Unit = {
     var currentRng = rng
     for (_ <- 0 until count) {
