@@ -6,7 +6,21 @@ import chapter8.Prop.TestCases
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-case class Prop(run: (TestCases, Rng) => Result)
+case class Prop(run: (TestCases, Rng) => Result) {
+  def &&(prop: Prop): Prop = Prop { (testCases, rng) =>
+    this.run(testCases, rng) match {
+      case Passed => prop.run(testCases, rng)
+      case falsified => falsified
+    }
+  }
+
+  def ||(prop: Prop): Prop = Prop { (testCases, rng) =>
+    this.run(testCases, rng) match {
+      case _: Falsified => prop.run(testCases, rng)
+      case passed => passed
+    }
+  }
+}
 
 object Prop {
   type TestCases = Int

@@ -18,6 +18,9 @@ case class Gen[A](sample: State[Rng, A]) {
 }
 
 object Gen {
+  def int: Gen[Int] =
+    Gen(State(Rng.int))
+
   def choose(start: Int, stopExclusive: Int): Gen[Int] = {
     val state = State(Rng.int).map(toRange(_, start, stopExclusive))
     Gen(state)
