@@ -17,7 +17,7 @@ class PropTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "return Failure" when {
+    "return Falsified" when {
       "property is falsified for each generated input value" in {
         val gen = Gen.int
         val rng = Deterministic(5)
@@ -42,5 +42,119 @@ class PropTest extends AnyWordSpec with Matchers {
     }
   }
 
-  // TODO: Tests for && and ||
+  "&&" should {
+    "return Pass" when {
+      "both props are passed" in {
+        val gen = Gen.int
+        val rng = Deterministic(1, 2, 3, 4, 5)
+        val notEqual100Prop = Prop.forAll(gen)(_ != 100)
+        val positiveProp = Prop.forAll(gen)(_ > 0)
+        val resultProp = notEqual100Prop.&&(positiveProp)
+
+        val result = resultProp.run(10, rng)
+
+        result should be(Passed)
+      }
+    }
+
+    "return Falsified" when {
+      "left prop at some point is falsified" in {
+        val gen = Gen.int
+        val rng = Deterministic(1, 2, 3, 100, 5)
+        val notEqual100Prop = Prop.forAll(gen)(_ != 100)
+        val positiveProp = Prop.forAll(gen)(_ > 0)
+        val resultProp = notEqual100Prop.&&(positiveProp)
+
+        val result = resultProp.run(10, rng)
+
+        result should matchPattern {
+          case Falsified(_, 3) =>
+        }
+      }
+
+      "right prop at some point is falsified" in {
+        val gen = Gen.int
+        val rng = Deterministic(1, 2, 3, 100, 5)
+        val positiveProp = Prop.forAll(gen)(_ > 0)
+        val notEqual100Prop = Prop.forAll(gen)(_ != 100)
+        val resultProp = positiveProp.&&(notEqual100Prop)
+
+        val result = resultProp.run(10, rng)
+
+        result should matchPattern {
+          case Falsified(_, 3) =>
+        }
+      }
+
+      "both props are falsified at some point" in {
+        val gen = Gen.int
+        val rng = Deterministic(1, -2, 3, 100, 5)
+        val positiveProp = Prop.forAll(gen)(_ > 0)
+        val notEqual100Prop = Prop.forAll(gen)(_ != 100)
+        val resultProp = positiveProp.&&(notEqual100Prop)
+
+        val result = resultProp.run(10, rng)
+
+        result should matchPattern {
+          case Falsified(_, 1) =>
+        }
+      }
+    }
+  }
+
+  "||" should {
+    "return Pass" when {
+      "both props are passed" in {
+        val gen = Gen.int
+        val rng = Deterministic(1, 2, 3, 4, 5)
+        val notEqual100Prop = Prop.forAll(gen)(_ != 100)
+        val positiveProp = Prop.forAll(gen)(_ > 0)
+        val resultProp = notEqual100Prop.||(positiveProp)
+
+        val result = resultProp.run(10, rng)
+
+        result should be(Passed)
+      }
+
+      "left prop at some point is falsified" in {
+        val gen = Gen.int
+        val rng = Deterministic(1, 2, 3, 100, 5)
+        val notEqual100Prop = Prop.forAll(gen)(_ != 100)
+        val positiveProp = Prop.forAll(gen)(_ > 0)
+        val resultProp = notEqual100Prop.||(positiveProp)
+
+        val result = resultProp.run(10, rng)
+
+        result should be(Passed)
+      }
+
+      "right prop at some point is falsified" in {
+        val gen = Gen.int
+        val rng = Deterministic(1, 2, 3, 100, 5)
+        val positiveProp = Prop.forAll(gen)(_ > 0)
+        val notEqual100Prop = Prop.forAll(gen)(_ != 100)
+        val resultProp = positiveProp.||(notEqual100Prop)
+
+        val result = resultProp.run(10, rng)
+
+        result should be(Passed)
+      }
+    }
+
+    "return Falsified" when {
+      "both props are falsified at some point" in {
+        val gen = Gen.int
+        val rng = Deterministic(1, -2, 3, 100, 5)
+        val positiveProp = Prop.forAll(gen)(_ > 0)
+        val notEqual100Prop = Prop.forAll(gen)(_ != 100)
+        val resultProp = positiveProp.||(notEqual100Prop)
+
+        val result = resultProp.run(10, rng)
+
+        result should matchPattern {
+          case _: Falsified =>
+        }
+      }
+    }
+  }
 }
