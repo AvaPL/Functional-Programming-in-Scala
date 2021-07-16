@@ -7,5 +7,5 @@ case class SGen[A](forSize: Int => Gen[A]) {
 
 object SGen {
   def listOf[A](gen: Gen[A]): SGen[List[A]] =
-    SGen(size => gen.listOfN(Gen.unit(size)))
+    SGen(gen.listOfN)
 }
