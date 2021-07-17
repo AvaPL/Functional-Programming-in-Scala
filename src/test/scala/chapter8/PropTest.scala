@@ -1,6 +1,7 @@
 package chapter8
 
 import chapter6.Rng.Deterministic
+import chapter8.Prop.{Falsified, Passed}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
