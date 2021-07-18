@@ -102,6 +102,7 @@ object Prop {
   private def linearTestCases(testCases: TestCases, sizesCount: MaxSize) = {
     // TODO: Add tests
     // From 1 to x distributed linearly so the total number of cases equals testCases
+    // TODO: This formula for x and step is invalid
     val x = testCases / (sizesCount - 1.0) + 1.0
     val step = (x - 1.0) / (sizesCount - 1.0)
     val cases = Stream.fromViaUnfold(1, step).map(_.toInt).take(sizesCount).toArray
