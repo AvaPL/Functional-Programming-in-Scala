@@ -75,17 +75,20 @@ object Prop {
     Prop { (maxSize, testCases, rng) =>
       val sizes = calculateSizes(maxSize)
       val cases = calculateTestCases(testCases, sizes.size)
-      // TODO: Use cases and sizes
       val gens = sizes.map(sgen.forSize)
-      val prop = gens.map(forAll(_)(f)).reduce(_ && _)
-      prop.run(maxSize, testCases, rng)
+      val props = gens.map(forAll(_)(f))
+      // TODO: Use Stream for lazy evaluation
+      props.zip(cases).map {
+        case (prop, testCases) => prop.run(testCases, rng)
+      }.collectFirst {
+        case falsified: Falsified => falsified
+      }.getOrElse(Passed)
     }
 
   private def calculateSizes(maxSize: MaxSize) = {
     // TODO: Add tests
-    // TODO: Add iterate to Stream and use it here
     // 0, 1, 2, 4, 8, 16, ...
-    0 :: LazyList.iterate(1)(_ * 2).takeWhile(_ < maxSize).toList
+    0 :: Stream.iterate(1)(_ * 2).takeWhile(_ < maxSize).toList
   }
 
   private def calculateTestCases(testCases: TestCases, sizesCount: Int) =

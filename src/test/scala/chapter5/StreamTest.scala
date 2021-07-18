@@ -370,19 +370,19 @@ class StreamTest extends AnyWordSpec with Matchers {
 
     "given double and step" should {
       "return a Stream of doubles incremented by 1.0" in {
-        Stream.fromViaUnfold(5.0).take(5).toList should equal(List[Double](5, 6, 7, 8, 9))
+        Stream.fromViaUnfold(5.0).take(5).toList should equal(Stream[Double](5, 6, 7, 8, 9).toList)
       }
 
       "return a Stream of doubles incremented by step" in {
-        Stream.fromViaUnfold(5.0, 5.0).take(5).toList should equal(List[Double](5, 10, 15, 20, 25))
+        Stream.fromViaUnfold(5.0, 5.0).take(5).toList should equal(Stream[Double](5, 10, 15, 20, 25).toList)
       }
 
       "return a Stream of doubles incremented by negative step (decremented)" in {
-        Stream.fromViaUnfold(5.0, -5.0).take(5).toList should equal(List[Double](5, 0, -5, -10, -15))
+        Stream.fromViaUnfold(5.0, -5.0).take(5).toList should equal(Stream[Double](5, 0, -5, -10, -15).toList)
       }
 
       "return a Stream of constant when step is set to 0.0" in {
-        Stream.fromViaUnfold(5.0, 0.0).take(5).toList should equal(List[Double](5.0, 5.0, 5.0, 5.0, 5.0))
+        Stream.fromViaUnfold(5.0, 0.0).take(5).toList should equal(Stream[Double](5.0, 5.0, 5.0, 5.0, 5.0).toList)
       }
 
       implicit val doublesEquality: Equality[Double] =
@@ -593,6 +593,14 @@ class StreamTest extends AnyWordSpec with Matchers {
     "elements are never evaluated" should {
       "not overflow" in {
         noException should be thrownBy Stream.ones.scanRight(0)(_ + _)
+      }
+    }
+  }
+
+  "iterate" when {
+    "given start element and a function" should {
+      "consecutively apply function" in {
+        Stream.iterate(1)(_ * 2).take(5).toList should be(Stream(1, 2, 4, 8, 16).toList)
       }
     }
   }

@@ -191,6 +191,9 @@ object Stream {
       case Some((element, z)) => cons(element, unfold(z)(f))
       case None => Empty
     }
+
+  def iterate[A](start: => A)(f: A => A): Stream[A] =
+    unfold(start)(a => Some(a, f(a)))
 }
 
 case object Empty extends Stream[Nothing]
