@@ -77,8 +77,7 @@ object Prop {
       val cases = calculateTestCases(testCases, sizes.size)
       val gens = sizes.map(sgen.forSize)
       val props = gens.map(forAll(_)(f))
-      // TODO: Use Stream for lazy evaluation
-      props.zip(cases).map {
+      LazyList.from(props).zip(cases).map {
         case (prop, testCases) => prop.run(testCases, rng)
       }.collectFirst {
         case falsified: Falsified => falsified
