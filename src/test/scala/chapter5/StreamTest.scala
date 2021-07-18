@@ -1,5 +1,6 @@
 package chapter5
 
+import org.scalactic.Equality
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -15,6 +16,20 @@ class StreamTest extends AnyWordSpec with Matchers {
     "Stream has elements" should {
       "evaluate and return a List" in {
         Stream(1, 2, 3).toList should be(List(1, 2, 3))
+      }
+    }
+  }
+
+  "toArray" when {
+    "Stream is empty" should {
+      "return empty Array" in {
+        Stream().toArray should be(Array())
+      }
+    }
+
+    "Stream has elements" should {
+      "evaluate and return an Array" in {
+        Stream(1, 2, 3).toArray should be(Array(1, 2, 3))
       }
     }
   }
@@ -346,9 +361,35 @@ class StreamTest extends AnyWordSpec with Matchers {
     }
   }
 
-  "fromViaUnfold" should {
-    "be same as from" in {
-      Stream.fromViaUnfold(5).take(100).toList should be(Stream.from(5).take(100).toList)
+  "fromViaUnfold" when {
+    "used" should {
+      "be same as from" in {
+        Stream.fromViaUnfold(5).take(100).toList should be(Stream.from(5).take(100).toList)
+      }
+    }
+
+    "given double and step" should {
+      "return a Stream of doubles incremented by 1.0" in {
+        Stream.fromViaUnfold(5.0).take(5).toList should equal(List[Double](5, 6, 7, 8, 9))
+      }
+
+      "return a Stream of doubles incremented by step" in {
+        Stream.fromViaUnfold(5.0, 5.0).take(5).toList should equal(List[Double](5, 10, 15, 20, 25))
+      }
+
+      "return a Stream of doubles incremented by negative step (decremented)" in {
+        Stream.fromViaUnfold(5.0, -5.0).take(5).toList should equal(List[Double](5, 0, -5, -10, -15))
+      }
+
+      "return a Stream of constant when step is set to 0.0" in {
+        Stream.fromViaUnfold(5.0, 0.0).take(5).toList should equal(List[Double](5.0, 5.0, 5.0, 5.0, 5.0))
+      }
+
+      implicit val doublesEquality: Equality[Double] =
+        (a: Double, b: Any) => b match {
+          case b: Double => a === b +- 0.01
+          case _ => false
+        }
     }
   }
 

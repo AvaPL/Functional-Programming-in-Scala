@@ -5,9 +5,13 @@ import chapter6.Rng
 import chapter8.Prop._
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Random, Success, Try}
+import scala.math.abs
+import scala.util.{Failure, Success, Try}
 
 case class Prop(run: (MaxSize, TestCases, Rng) => Result) {
+  def run(testCases: TestCases, rng: Rng): Result =
+    run(Int.MaxValue, testCases, rng)
+
   def &&(prop: Prop): Prop = Prop { (maxSize, testCases, rng) =>
     this.run(maxSize, testCases, rng) match {
       case Passed => prop.run(maxSize, testCases, rng)
@@ -38,7 +42,7 @@ object Prop {
     Prop((_, testCases, rng) => run(testCases, rng))
 
   def forAll[A](gen: Gen[A])(f: A => Boolean): Prop =
-    Prop(ForAllPropChecker(gen, f, _).check(_))
+    Prop((_, testCases, rng) => ForAllPropChecker(gen, f, testCases).check(rng))
 
   private case class ForAllPropChecker[A](gen: Gen[A], f: A => Boolean, testCases: TestCases) {
 
@@ -78,23 +82,32 @@ object Prop {
     }
 
   private def calculateSizes(maxSize: MaxSize) = {
-    // 0, 1, 2, 4, 8, 16, ...
     // TODO: Add tests
+    // TODO: Add iterate to Stream and use it here
+    // 0, 1, 2, 4, 8, 16, ...
     0 :: LazyList.iterate(1)(_ * 2).takeWhile(_ < maxSize).toList
   }
 
-  private def calculateTestCases(testCases: TestCases, sizesCount: Int) = {
-    // From 1 to x distributed linearly so the total number of cases equals testCases
-    // TODO: Handle sizesCount <= 1 and testCases < 0
-    val x = testCases / (sizesCount - 1) + 1
-    val step = (x - 1) / (sizesCount - 1)
-    val cases = (1 to x by step).toArray // TODO: Use BigDecimal range?
-    val casesToRandomlyDistribute = testCases - cases.sum
-    for {_ <- 0 to casesToRandomlyDistribute} {
-      val randomIndex = Random.nextInt(cases.length)
-      cases(randomIndex) += 1
+  private def calculateTestCases(testCases: TestCases, sizesCount: Int) =
+  // TODO: Add tests
+    (testCases, sizesCount) match {
+      case (_, sizesCount) if sizesCount < 1 => List()
+      case (testCases, sizesCount) if testCases <= 0 => List.fill(sizesCount)(0)
+      case (testCases, sizesCount) if sizesCount == 1 => List(testCases)
+      case (testCases, sizesCount) => linearTestCases(testCases, sizesCount)
     }
-    // TODO: Ensure that result has size of sizesCount
+
+  private def linearTestCases(testCases: TestCases, sizesCount: MaxSize) = {
+    // TODO: Add tests
+    // From 1 to x distributed linearly so the total number of cases equals testCases
+    val x = testCases / (sizesCount - 1.0) + 1.0
+    val step = (x - 1.0) / (sizesCount - 1.0)
+    val cases = Stream.fromViaUnfold(1, step).map(_.toInt).take(sizesCount).toArray
+    val casesLeftToDistribute = testCases - cases.sum
+    for {i <- 0 to casesLeftToDistribute} {
+      val index = abs(cases.length - 1 - i) % cases.length
+      cases(index) += 1
+    }
     cases.toList
   }
 }

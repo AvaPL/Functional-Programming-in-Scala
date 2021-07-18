@@ -14,7 +14,7 @@ class RngTest extends AnyWordSpec with Matchers with MockFactory {
 
     "return non negative value when Int.MinValue is returned from RNG" in {
       val mockRng = mock[Rng]
-      (mockRng.nextInt _).expects().returning((Int.MinValue, mockRng))
+      (() => mockRng.nextInt).expects().returning((Int.MinValue, mockRng))
 
       nonNegativeInt(mockRng)._1 should be >= 0
     }

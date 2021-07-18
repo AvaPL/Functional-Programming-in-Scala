@@ -1,4 +1,5 @@
 name := "FunctionalScala"
+ThisBuild / scalacOptions ++= Seq("-deprecation")
 
 version := "0.1"
 

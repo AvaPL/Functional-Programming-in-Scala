@@ -3,6 +3,8 @@ package chapter5
 import chapter5.Stream.{cons, unfold}
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 trait Stream[+A] {
 
@@ -14,6 +16,16 @@ trait Stream[+A] {
     }
 
     loop(this, Nil).reverse
+  }
+
+  def toArray[B >: A : ClassTag]: Array[B] = {
+    @tailrec
+    def loop(stream: Stream[A], result: ArrayBuffer[A]): ArrayBuffer[A] = stream match {
+      case Cons(head, tail) => loop(tail(), result.append(head()))
+      case Empty => result
+    }
+
+    loop(this, ArrayBuffer.empty).toArray
   }
 
   def foldRight[B](z: => B)(f: (A, => B) => B): B =
@@ -157,6 +169,9 @@ object Stream {
 
   def fromViaUnfold(n: Int): Stream[Int] =
     unfold(n)(i => Some(i, i + 1))
+
+  def fromViaUnfold(n: Double, step: Double = 1.0): Stream[Double] =
+    unfold(n)(d => Some(d, d + step))
 
   val fibs: Stream[Int] = {
     def loop(a: Int, b: Int): Stream[Int] = {

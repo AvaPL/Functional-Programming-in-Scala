@@ -1,10 +1,11 @@
 package chapter4
 
 import chapter4.Chapter4._
+import org.scalatest.Inside
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class Chapter4Test extends AnyWordSpec with Matchers {
+class Chapter4Test extends AnyWordSpec with Matchers with Inside {
 
   "variance" when {
     "given empty list" should {
@@ -23,8 +24,7 @@ class Chapter4Test extends AnyWordSpec with Matchers {
       "return 2.8 for 1, 1, 2, 3, 5" in {
         val result = variance(Seq(1, 1, 2, 3, 5))
 
-        result shouldBe a[Some[Double]]
-        result match {
+        inside(result) {
           case Some(value) => value should be(2.24 +- 0.01)
         }
       }
