@@ -84,30 +84,28 @@ object Prop {
       }.getOrElse(Passed)
     }
 
-  private def calculateSizes(maxSize: MaxSize) = {
+  private[chapter8] def calculateSizes(maxSize: MaxSize) = {
     // TODO: Add tests
     // 0, 1, 2, 4, 8, 16, ...
-    0 :: Stream.iterate(1)(_ * 2).takeWhile(_ < maxSize).toList
+    0 :: Stream.iterate(1)(_ * 2).takeWhile(_ <= maxSize).toList
   }
 
-  private def calculateTestCases(testCases: TestCases, sizesCount: Int) =
+  private[chapter8] def calculateTestCases(testCases: TestCases, sizesCount: Int) =
   // TODO: Add tests
     (testCases, sizesCount) match {
       case (_, sizesCount) if sizesCount < 1 => List()
-      case (testCases, sizesCount) if testCases <= 0 => List.fill(sizesCount)(0)
+      case (testCases, sizesCount) if testCases <= sizesCount => List.fill(testCases)(1).padTo(sizesCount, 0)
       case (testCases, sizesCount) if sizesCount == 1 => List(testCases)
       case (testCases, sizesCount) => linearTestCases(testCases, sizesCount)
     }
 
-  private def linearTestCases(testCases: TestCases, sizesCount: MaxSize) = {
+  private[chapter8] def linearTestCases(testCases: TestCases, sizesCount: MaxSize) = {
     // TODO: Add tests
     // From 1 to x distributed linearly so the total number of cases equals testCases
-    // TODO: This formula for x and step is invalid
-    val x = testCases / (sizesCount - 1.0) + 1.0
-    val step = (x - 1.0) / (sizesCount - 1.0)
+    val step = 2.0 * (testCases - sizesCount) / (sizesCount * (sizesCount - 1))
     val cases = Stream.fromViaUnfold(1, step).map(_.toInt).take(sizesCount).toArray
     val casesLeftToDistribute = testCases - cases.sum
-    for {i <- 0 to casesLeftToDistribute} {
+    for {i <- 0 until casesLeftToDistribute} {
       val index = abs(cases.length - 1 - i) % cases.length
       cases(index) += 1
     }

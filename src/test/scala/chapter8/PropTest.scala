@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class PropTest extends AnyWordSpec with Matchers {
-  "forAll" should {
+  "forAll for Gen" should {
     "return Passed" when {
       "property is fulfilled for each generated input value" in {
         val gen = Gen.int
@@ -157,5 +157,43 @@ class PropTest extends AnyWordSpec with Matchers {
         }
       }
     }
+  }
+
+  "calculateSizes" when {
+    "given a negative max size" should {
+      "return empty List" in {
+        // TODO: Fill
+      }
+    }
+
+    "given 0 max size" should {
+      "return List(0)" in {
+        // TODO: Fill
+      }
+    }
+
+    "given power of 2 max size" should {
+      "return 0 appended by incrementing power of 2 elements" in {
+        // TODO: Fill
+      }
+
+      "return a List ending with that size" in {
+        // TODO: Fill
+      }
+    }
+
+    "given max size that is not power of 2" should {
+      "return a List ending with last power of 2 smaller than max size" in {
+        // TODO: Fill
+      }
+    }
+  }
+
+  "calculateTestCases" when {
+    // TODO: Fill
+  }
+
+  "linearTestCases" when {
+    // TODO: Fill
   }
 }
