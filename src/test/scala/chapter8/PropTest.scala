@@ -162,38 +162,110 @@ class PropTest extends AnyWordSpec with Matchers {
   "calculateSizes" when {
     "given a negative max size" should {
       "return empty List" in {
-        // TODO: Fill
+        Prop.calculateSizes(-5) should be(Nil)
       }
     }
 
     "given 0 max size" should {
       "return List(0)" in {
-        // TODO: Fill
+        Prop.calculateSizes(0) should be(List(0))
       }
     }
 
     "given power of 2 max size" should {
       "return 0 appended by incrementing power of 2 elements" in {
-        // TODO: Fill
+        Prop.calculateSizes(32) should be(List(0, 1, 2, 4, 8, 16, 32))
       }
 
       "return a List ending with that size" in {
-        // TODO: Fill
+        Prop.calculateSizes(1024).last should be(1024)
       }
     }
 
     "given max size that is not power of 2" should {
       "return a List ending with last power of 2 smaller than max size" in {
-        // TODO: Fill
+        Prop.calculateSizes(1023).last should be(512)
       }
     }
   }
 
   "calculateTestCases" when {
-    // TODO: Fill
+    "sizesCount is negative" should {
+      "return empty List" in {
+        Prop.calculateTestCases(1000, -5) should be(Nil)
+      }
+    }
+
+    "sizesCount is 0" should {
+      "return empty List" in {
+        Prop.calculateTestCases(1000, -5) should be(Nil)
+      }
+    }
+
+    "sizesCount is 1" should {
+      "return a List with one element equal to testCases" in {
+        Prop.calculateTestCases(123, 1) should be(List(123))
+      }
+    }
+
+    "sizesCount is equal testCases" should {
+      "return a List with only ones" in {
+        Prop.calculateTestCases(5, 5) should be(List(1, 1, 1, 1, 1))
+      }
+    }
+
+    "sizesCount is smaller than testCases" should {
+      "return a List with ones padded by zeroes" in {
+        Prop.calculateTestCases(3, 5) should be(List(1, 1, 1, 0, 0))
+      }
+    }
+
+    "sizesCount is greater than testCases" should {
+      "return linearly incrementing test cases" in {
+        Prop.calculateTestCases(15, 5) should be(List(1, 2, 3, 4, 5))
+      }
+
+      "return list that sums to testCases and is sorted" in {
+        val testCases = 1234567
+        val result = Prop.calculateTestCases(testCases, 123)
+
+        result shouldBe sorted
+        result.sum should be(testCases)
+      }
+    }
   }
 
-  "linearTestCases" when {
-    // TODO: Fill
+  "forAll for SGen" should {
+    "return Passed" when {
+      "property is fulfilled for each generated input value" in {
+        val sgen = SGen.listOf(Gen.int)
+        val rng = Deterministic(5)
+
+        val result = Prop.forAll(sgen)(_ => true).run(10, 100, rng)
+
+        result should be(Passed)
+      }
+    }
+
+    "return Falsified" when {
+      "property is falsified for each generated input value" in {
+        val sgen = SGen.listOf(Gen.int)
+        val rng = Deterministic(5)
+
+        val result = Prop.forAll(sgen)(_ => false).run(10, 100, rng)
+
+        result shouldBe a[Falsified]
+      }
+
+      "property is falsified for lists of size greater than 10" in {
+        val sgen = SGen.listOf(Gen.int)
+        val rng = Deterministic(1, 2, 3, 100, 5)
+
+        // Will fail for lists of size 16, 32, 64
+        val result = Prop.forAll(sgen)(_.size < 10).run(100, 100, rng)
+
+        result shouldBe a[Falsified]
+      }
+    }
   }
 }
