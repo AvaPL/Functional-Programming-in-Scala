@@ -27,7 +27,7 @@ object Gen {
     Gen(State(Rng.int))
 
   def choose(start: Int, stopExclusive: Int): Gen[Int] = {
-    val state = State(Rng.int).map(toRange(_, start, stopExclusive))
+    val state = State(Rng.nonNegativeInt).map(toRange(_, start, stopExclusive))
     Gen(state)
   }
 

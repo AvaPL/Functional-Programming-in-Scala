@@ -12,6 +12,12 @@ case class Prop(run: (MaxSize, TestCases, Rng) => Result) {
   def run(testCases: TestCases, rng: Rng): Result =
     run(Int.MaxValue, testCases, rng)
 
+  def check(maxSize: MaxSize = 100, testCases: TestCases = 100, rng: Rng = Rng.Simple(System.currentTimeMillis())): Unit =
+    run(maxSize, testCases, rng) match {
+      case Passed => println(s"Passed after $testCases test cases.")
+      case Falsified(failure, successes) => Console.err.println(s"Falsified after $successes successful test cases:\n$failure")
+    }
+
   def &&(prop: Prop): Prop = Prop { (maxSize, testCases, rng) =>
     this.run(maxSize, testCases, rng) match {
       case Passed => prop.run(maxSize, testCases, rng)

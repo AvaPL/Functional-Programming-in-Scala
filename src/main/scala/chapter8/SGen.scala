@@ -8,4 +8,7 @@ case class SGen[A](forSize: Int => Gen[A]) {
 object SGen {
   def listOf[A](gen: Gen[A]): SGen[List[A]] =
     SGen(gen.listOfN)
+
+  def nonEmptyListOf[A](gen: Gen[A]): SGen[List[A]] =
+    SGen(i => gen.listOfN(i.max(1)))
 }

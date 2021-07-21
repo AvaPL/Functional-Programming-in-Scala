@@ -28,4 +28,33 @@ class SGenTest extends AnyWordSpec with Matchers {
       listOfSizeM.listOfN(n).sample.run(rng)._1
     }
   }
+
+  "nonEmptyListOf" should {
+    "produce nonempty List" when {
+      "given a Gen and negative number" in {
+        val list = generateNonEmptyListOfSizeN(-5)
+
+        list should not be empty
+      }
+
+      "given a Gen and 0" in {
+        val list = generateNonEmptyListOfSizeN(0)
+
+        list should not be empty
+      }
+
+      "given a Gen and positive number" in {
+        val list = generateNonEmptyListOfSizeN(5)
+
+        list should not be empty
+      }
+    }
+
+    def generateNonEmptyListOfSizeN(n: Int) = {
+      val gen = Gen.int
+      val rng = Rng.Simple(0)
+      val listOfSizeM = SGen.nonEmptyListOf(gen).forSize(n)
+      listOfSizeM.sample.run(rng)._1
+    }
+  }
 }
