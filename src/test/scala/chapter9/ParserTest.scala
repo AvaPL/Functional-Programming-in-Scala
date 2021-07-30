@@ -365,4 +365,30 @@ class ParserTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "map" when {
+    "given a parser" should {
+      "map over value with given function" in {
+        val string = "abc"
+        val parser = Parser.string(string)
+
+        val mapped = parser.map(_.length)
+        val result = mapped.run(string)
+
+        result should be(Right(string.length))
+      }
+
+      "return the same error as without mapping in case of failure" in {
+        val parser = Parser.string("fail")
+        val input = "test"
+
+        val result = parser.run(input)
+        val mappedResult = parser.map(_.length).run(input)
+
+        (result, mappedResult) should matchPattern {
+          case (Left(error1), Left(error2)) if error1 == error2 =>
+        }
+      }
+    }
+  }
 }

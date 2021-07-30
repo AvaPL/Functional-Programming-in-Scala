@@ -14,6 +14,8 @@ trait Parser[T] {
   def atLeastOne: Parser[List[T]] = ???
 
   def followedBy[U](other: Parser[U]): Parser[(T, U)] = ???
+
+  def map[U](f: T => U): Parser[U] = ???
 }
 
 object Parser {
