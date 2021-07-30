@@ -95,6 +95,45 @@ class ParserTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "either" should {
+    "parse the type on the left" when {
+      "only left parser can parse" in {
+        val int = 5
+        val parser1 = Parser.int(int)
+        val parser2 = Parser.char('a')
+        val orParser = parser1.either(parser2)
+
+        val result = orParser.run(int.toString).toOption.get
+
+        result should be(Left(int))
+      }
+
+      "both parsers can parse" in {
+        val int = 5
+        val parser1 = Parser.int(int)
+        val parser2 = Parser.string(int.toString)
+        val orParser = parser1.either(parser2)
+
+        val result = orParser.run(int.toString).toOption.get
+
+        result should be(Left(int))
+      }
+    }
+
+    "parse the type on the right" when {
+      "only right parser can parse" in {
+        val int = 5
+        val parser1 = Parser.char('a')
+        val parser2 = Parser.int(int)
+        val orParser = parser1.either(parser2)
+
+        val result = orParser.run(int.toString).toOption.get
+
+        result should be(Right(int))
+      }
+    }
+  }
+
   "listOfN" should {
     "parse a string" when {
       "number of occurrences matches the given number" in {
@@ -155,6 +194,174 @@ class ParserTest extends AnyWordSpec with Matchers {
         val result = parser3.run(stringNonConsecutive)
 
         result should be(Right(stringNonConsecutive))
+      }
+    }
+  }
+
+  "many" when {
+    "given a parser" should {
+      "parse empty string" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string * 0)
+
+        result should be(Right(Nil))
+      }
+
+      "parse single occurrence" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string)
+
+        result should be(Right(List(string)))
+      }
+
+      "parse multiple occurrences" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string * 5)
+
+        result should be(Right(List.fill(5)(string)))
+      }
+
+      "return an error when the end doesn't match" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string * 5 + "error")
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+
+      "return an error on nonconsecutive occurrences" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string * 3 + "error" + string * 2)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+    }
+  }
+
+  "atLeastOne" when {
+    "given a parser" should {
+      "return an error on empty string" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string * 0)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+
+      "parse single occurrence" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string)
+
+        result should be(Right(List(string)))
+      }
+
+      "parse multiple occurrences" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string * 5)
+
+        result should be(Right(List.fill(5)(string)))
+      }
+
+      "return an error when the end doesn't match" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string * 5 + "error")
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+
+      "return an error on nonconsecutive occurrences" in {
+        val string = "abc"
+        val parser = Parser.string(string).many
+
+        val result = parser.run(string * 3 + "error" + string * 2)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+    }
+  }
+
+  "followedBy" when {
+    "given two parsers" should {
+      "parse when string is followed by int" in {
+        val string = "abc"
+        val int = 5
+        val parser1 = Parser.string(string)
+        val parser2 = Parser.int(int)
+        val parserFollowedBy = parser1.followedBy(parser2)
+        val input = string + int
+
+        val result = parserFollowedBy.run(input)
+
+        result should be(Right(string, int))
+      }
+
+      "return an error when the order is not correct" in {
+        val string = "abc"
+        val int = 5
+        val parser1 = Parser.string(string)
+        val parser2 = Parser.int(int)
+        val parserFollowedBy = parser1.followedBy(parser2)
+        val input = int + string
+
+        val result = parserFollowedBy.run(input)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+
+      "return an error when first parser fails" in {
+        val int = 5
+        val parser1 = Parser.string("fail")
+        val parser2 = Parser.int(int)
+        val parserFollowedBy = parser1.followedBy(parser2)
+        val input = "test" + int
+
+        val result = parserFollowedBy.run(input)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+
+      "return an error when second parser fails" in {
+        val string = "abc"
+        val parser1 = Parser.string(string)
+        val parser2 = Parser.int(5)
+        val parserFollowedBy = parser1.followedBy(parser2)
+        val input = string + 99
+
+        val result = parserFollowedBy.run(input)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
       }
     }
   }
