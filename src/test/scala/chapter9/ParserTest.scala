@@ -17,7 +17,7 @@ class ParserTest extends AnyWordSpec with Matchers {
       }
     }
 
-    "given a word" should {
+    "given a word that doesn't start with that char" should {
       "return ParseError" in {
         val parser = Parser.char('a')
         val input = "test"
@@ -33,13 +33,35 @@ class ParserTest extends AnyWordSpec with Matchers {
 
   "string" when {
     "given a string" should {
-      "parse it" in {
+      "parse it when it exactly matches parser" in {
         val string = "test"
         val parser = Parser.string(string)
 
         val result = parser.run(string)
 
         result should be(Right(string))
+      }
+
+      "parse it when only prefix matches" in {
+        val string = "test"
+        val parser = Parser.string(string)
+        val input = string + "other"
+
+        val result = parser.run(input)
+
+        result should be(Right(string))
+      }
+
+      "return an error when it doesn't start with parser string" in {
+        val string = "test"
+        val parser = Parser.string(string)
+        val input = "other" + string
+
+        val result = parser.run(input)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
       }
     }
   }
@@ -227,26 +249,13 @@ class ParserTest extends AnyWordSpec with Matchers {
         result should be(Right(List.fill(5)(string)))
       }
 
-      "return an error when the end doesn't match" in {
+      "parse when the end doesn't match" in {
         val string = "abc"
         val parser = Parser.string(string).many
 
-        val result = parser.run(string * 5 + "error")
+        val result = parser.run(string * 5 + "end")
 
-        result should matchPattern {
-          case Left(_: ParseError) =>
-        }
-      }
-
-      "return an error on nonconsecutive occurrences" in {
-        val string = "abc"
-        val parser = Parser.string(string).many
-
-        val result = parser.run(string * 3 + "error" + string * 2)
-
-        result should matchPattern {
-          case Left(_: ParseError) =>
-        }
+        result should be(Right(List.fill(5)(string)))
       }
     }
   }
@@ -282,26 +291,13 @@ class ParserTest extends AnyWordSpec with Matchers {
         result should be(Right(List.fill(5)(string)))
       }
 
-      "return an error when the end doesn't match" in {
+      "parse when the end doesn't match" in {
         val string = "abc"
         val parser = Parser.string(string).many
 
-        val result = parser.run(string * 5 + "error")
+        val result = parser.run(string * 5 + "end")
 
-        result should matchPattern {
-          case Left(_: ParseError) =>
-        }
-      }
-
-      "return an error on nonconsecutive occurrences" in {
-        val string = "abc"
-        val parser = Parser.string(string).many
-
-        val result = parser.run(string * 3 + "error" + string * 2)
-
-        result should matchPattern {
-          case Left(_: ParseError) =>
-        }
+        result should be(Right(List.fill(5)(string)))
       }
     }
   }
@@ -388,6 +384,136 @@ class ParserTest extends AnyWordSpec with Matchers {
         (result, mappedResult) should matchPattern {
           case (Left(error1), Left(error2)) if error1 == error2 =>
         }
+      }
+    }
+  }
+
+  "slice" when {
+    "given a matching string" should {
+      "return the whole input if it matches" in {
+        val string = "aaaaa"
+        val parser = Parser.char('a').many.slice
+
+        val result = parser.run(string)
+
+        result should be(Right(string))
+      }
+
+      "return the beginning of the input when the end doesn't match" in {
+        val beginning = "aaaaa"
+        val end = "bbb"
+        val parser = Parser.char('a').many.slice
+        val input = beginning + end
+
+        val result = parser.run(input)
+
+        result should be(Right(beginning))
+      }
+    }
+
+    "given a non matching string" should {
+      "return a parse error" in {
+        val parser = Parser.char('a').many.slice
+
+        val result = parser.run("fail")
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+    }
+  }
+
+  "flatMap" should { // TODO: Logic here might not be correct
+    "return an error" when {
+      "first parser fails" in {
+        val parser1 = Parser.string("test")
+        val parser2 = parser1.flatMap(s => Parser.int(s.length))
+
+        val result = parser2.run("fail")
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+
+      "second parser fails" in {
+        val string = "test"
+        val parser1 = Parser.string(string)
+        val parser2 = parser1.flatMap(s => Parser.int(s.length))
+
+        val result = parser2.run("99")
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+    }
+
+    "return a parser from argument" when {
+      "both parsers succeed" in {
+        val string = "test"
+        val parser1 = Parser.string(string)
+        val parser2 = parser1.flatMap(s => Parser.int(s.length))
+
+        val result = parser2.run(string.length.toString)
+
+        result should be(Right(string.length))
+      }
+    }
+  }
+
+  "map2" should { // TODO: Logic here might not be correct
+    "return an error" when {
+      "left parser fails" in {
+        val int = 5
+        val parser1 = Parser.string("fail")
+        val parser2 = Parser.int(int)
+        val map2Parser = Parser.map2(parser1, parser2)(_ + _)
+
+        val result = map2Parser.run(int.toString)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+
+      "right parser fails" in {
+        val string = "test"
+        val parser1 = Parser.string(string)
+        val parser2 = Parser.int(5)
+        val map2Parser = Parser.map2(parser1, parser2)(_ + _)
+
+        val result = map2Parser.run(string)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+    }
+
+    "parse input" when {
+      "both parsers succeed" in {
+        val int = 5
+        val parser1 = Parser.string(int.toString)
+        val parser2 = Parser.int(int)
+        val map2Parser = Parser.map2(parser1, parser2)(_ + _)
+
+        val result = map2Parser.run(int.toString)
+
+        result should be(Right("55"))
+      }
+    }
+  }
+
+  "succeed" when {
+    "given any string" should {
+      "return the given result" in {
+        val parser = Parser.succeed(5)
+
+        val result = parser.run("any string")
+
+        result should be(Right(5))
       }
     }
   }
