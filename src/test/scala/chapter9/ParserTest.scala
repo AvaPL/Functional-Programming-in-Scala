@@ -469,7 +469,7 @@ class ParserTest extends AnyWordSpec with Matchers {
         val int = 5
         val parser1 = Parser.string("fail")
         val parser2 = Parser.int(int)
-        val map2Parser = Parser.map2(parser1, parser2)(_ + _)
+        val map2Parser = parser1.map2(parser2)(_ + _)
 
         val result = map2Parser.run(int.toString)
 
@@ -482,7 +482,7 @@ class ParserTest extends AnyWordSpec with Matchers {
         val string = "test"
         val parser1 = Parser.string(string)
         val parser2 = Parser.int(5)
-        val map2Parser = Parser.map2(parser1, parser2)(_ + _)
+        val map2Parser = parser1.map2(parser2)(_ + _)
 
         val result = map2Parser.run(string)
 
@@ -497,7 +497,7 @@ class ParserTest extends AnyWordSpec with Matchers {
         val int = 5
         val parser1 = Parser.string(int.toString)
         val parser2 = Parser.int(int)
-        val map2Parser = Parser.map2(parser1, parser2)(_ + _)
+        val map2Parser = parser1.map2(parser2)(_ + _)
 
         val result = map2Parser.run(int.toString)
 
@@ -514,6 +514,30 @@ class ParserTest extends AnyWordSpec with Matchers {
         val result = parser.run("any string")
 
         result should be(Right(5))
+      }
+    }
+  }
+
+  "regex" when {
+    "given a regex" should {
+      "parse the string if it matches regex" in {
+        val parser = Parser.regex("t..t".r)
+        val input = "test"
+
+        val result = parser.run(input)
+
+        result should be(Right(input))
+      }
+
+      "return an error when regex doesn't match" in {
+        val parser = Parser.regex("fail".r)
+        val input = "test"
+
+        val result = parser.run(input)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
       }
     }
   }
