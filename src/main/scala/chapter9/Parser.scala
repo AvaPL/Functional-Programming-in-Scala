@@ -42,3 +42,11 @@ trait Parser[T] {
   def map2[U, V](parser2: => Parser[U])(f: (T, U) => V): Parser[V] =
     this.flatMap(t => parser2.map(f(t, _)))
 }
+
+object Parser {
+  implicit class Flatten[T, U, V](val parser: Parser[((T, U), V)]) extends AnyVal {
+    def flatten: Parser[(T, U, V)] = parser.map {
+      case ((t, u), v) => (t, u, v)
+    }
+  }
+}
