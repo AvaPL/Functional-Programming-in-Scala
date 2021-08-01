@@ -6,43 +6,8 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
-  // TODO: Should be removed
+  // TODO: Should be removed, tests should be conducted on concrete implementation
   def mockParserGenerators: ParserGenerators = mock[ParserGenerators]
-
-  "string" when { // TODO: Should not be tested here
-    "given a string" should {
-      "parse it when it exactly matches parser" in {
-        val string = "test"
-        val parser = mockParserGenerators.string(string)
-
-        val result = parser.run(string)
-
-        result should be(Right(string))
-      }
-
-      "parse it when only prefix matches" in {
-        val string = "test"
-        val parser = mockParserGenerators.string(string)
-        val input = string + "other"
-
-        val result = parser.run(input)
-
-        result should be(Right(string))
-      }
-
-      "return an error when it doesn't start with parser string" in {
-        val string = "test"
-        val parser = mockParserGenerators.string(string)
-        val input = "other" + string
-
-        val result = parser.run(input)
-
-        result should matchPattern {
-          case Left(_: ParseError) =>
-        }
-      }
-    }
-  }
 
   "or" should {
     "parse a string" when {
@@ -95,7 +60,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     }
   }
 
-  "either" should { // TODO: Should not be tested here
+  "either" should {
     "parse the type on the left" when {
       "only left parser can parse" in {
         val char = 'a'
@@ -366,7 +331,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     }
   }
 
-  "slice" when { // TODO: Should not be tested here
+  "slice" when {
     "given a matching string" should {
       "return the whole input if it matches" in {
         val string = "aaaaa"
@@ -402,7 +367,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     }
   }
 
-  "flatMap" should { // TODO: Should not be tested here
+  "flatMap" should {
     // TODO: Logic here might not be correct
     "return an error" when {
       "first parser fails" in {
@@ -482,42 +447,6 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
         val result = map2Parser.run(char.toString)
 
         result should be(Right("aa"))
-      }
-    }
-  }
-
-  "succeed" when { // TODO: Should not be tested here
-    "given any string" should {
-      "return the given result" in {
-        val parser = mockParserGenerators.succeed(5)
-
-        val result = parser.run("any string")
-
-        result should be(Right(5))
-      }
-    }
-  }
-
-  "regex" when { // TODO: Should not be tested here
-    "given a regex" should {
-      "parse the string if it matches regex" in {
-        val parser = mockParserGenerators.regex("t..t".r)
-        val input = "test"
-
-        val result = parser.run(input)
-
-        result should be(Right(input))
-      }
-
-      "return an error when regex doesn't match" in {
-        val parser = mockParserGenerators.regex("fail".r)
-        val input = "test"
-
-        val result = parser.run(input)
-
-        result should matchPattern {
-          case Left(_: ParseError) =>
-        }
       }
     }
   }
