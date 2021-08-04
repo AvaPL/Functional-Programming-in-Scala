@@ -41,6 +41,9 @@ trait Parser[T] {
 
   def map2[U, V](parser2: => Parser[U])(f: (T, U) => V): Parser[V] =
     this.flatMap(t => parser2.map(f(t, _)))
+
+  def filter(f: T => Boolean): Parser[T] =
+    this.flatMap(t => if (f(t)) this else generators.failed)
 }
 
 object Parser {

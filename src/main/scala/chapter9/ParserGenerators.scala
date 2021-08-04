@@ -11,4 +11,6 @@ trait ParserGenerators {
   def regex(regex: Regex): Parser[String]
 
   def succeed[T](result: T): Parser[T]
+
+  def failed[T]: Parser[T]
 }
