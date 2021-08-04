@@ -15,28 +15,56 @@ object Json {
 
   case class JArray(get: IndexedSeq[Json]) extends Json
 
-  case class JObject(get: Map[String, Json]) extends Json
+  case class JObject(get: Map[JString, Json]) extends Json
 
   def parser(generators: JsonParserGenerators): Parser[Json] = {
-    val `object`: Parser[Nothing] = ???
-    val array: Parser[Nothing] = ???
-    val character: Parser[String] = generators.regex("""[^"\\]""".r)
-    val characters: Parser[String] = generators.string("").or(character.followedBy(characters).string)
-    val string: Parser[JString] = generators.string("\"").followedBy(characters).followedBy(generators.string("\"")).flatten.map(_.toString)
-    val onenine: Parser[String] = generators.regex("[1-9]".r)
-    val digit: Parser[String] = generators.string("0").or(onenine)
-    val digits: Parser[String] = digit.or(digit.followedBy(digits).string)
-    val integer: Parser[String] = digit.or(onenine.followedBy(digits).string).or(generators.string("-").followedBy(digit).string).or(generators.string("-").followedBy(onenine).followedBy(digits).flatten.string)
-    val fraction: Parser[String] = generators.string("").or(generators.string(".").followedBy(digits).string)
-    val sign: Parser[String] = generators.string("").or(generators.string("+")).or(generators.string("-"))
-    val exponent: Parser[String] = generators.string("").or(generators.string("E").followedBy(sign).followedBy(digits).flatten.string)
-    val number: Parser[JNumber] = integer.followedBy(fraction).followedBy(exponent).flatten.string.map(_.toDouble)
-    val bool: Parser[JBool] = generators.string("true").or(generators.string("false")).map(_.toBoolean)
-    val `null`: Parser[JNull.type] = generators.string("null").map(_ => JNull)
-    val value: Parser[Json] = `object`.or(array).or(string).or(number).or(bool).or(`null`)
-    val whitespaces: Parser[String] = generators.string("").or(generators.regex("\\s".r)).many.map(_.mkString)
-    val element: Parser[Json] = whitespaces.followedBy(value).followedBy(whitespaces).flatten.map(_._2)
-    val json: Parser[Json] = element
+    def member: Parser[(JString, Json)] = whitespaces.followedBy(string).followedBy(whitespaces).followedBy(generators.string(":")).followedBy(element).map { case ((((_, string), _), _), element) => (string, element) }
+
+    def members: Parser[Map[JString, Json]] = member.map(Map(_)).or(member.followedBy(generators.string(",")).followedBy(members).flatten.map { case (member, _, members) => members + member })
+
+    def `object`: Parser[JObject] = generators.string("{").followedBy(whitespaces.map(_ => Map[JString, Json]()).or(members)).followedBy(generators.string("}")).flatten.map(_._2).map(JObject)
+
+    def whitespaces: Parser[String] = generators.string("").or(generators.regex("\\s".r)).many.map(_.mkString)
+
+    def elements: Parser[IndexedSeq[Json]] = element.map(IndexedSeq(_)).or(element.followedBy(generators.string(",")).followedBy(elements).flatten.map { case (element, _, elements) => element +: elements })
+
+    def array: Parser[JArray] = generators.string("[").followedBy(whitespaces.map(_ => IndexedSeq.empty).or(elements)).followedBy(generators.string("]")).flatten.map(_._2).map(JArray)
+
+    def hex: Parser[String] = digit.or(generators.regex("[a-fA-F]".r))
+
+    def escape: Parser[String] = generators.regex("""["\\/bfnrtu]""".r).or(generators.string("u").followedBy(hex.listOfN(4)).map { case (u, digits) => s"$u${digits.mkString}" })
+
+    def character: Parser[String] = generators.regex("""[^"\\]""".r).or(generators.string("\\").followedBy(escape))
+
+    def characters: Parser[String] = generators.string("").or(character.followedBy(characters).string)
+
+    def string: Parser[JString] = generators.string("\"").followedBy(characters).followedBy(generators.string("\"")).flatten.map(_.toString).map(JString)
+
+    def onenine: Parser[String] = generators.regex("[1-9]".r)
+
+    def digit: Parser[String] = generators.string("0").or(onenine)
+
+    def digits: Parser[String] = digit.or(digit.followedBy(digits).string)
+
+    def integer: Parser[String] = digit.or(onenine.followedBy(digits).string).or(generators.string("-").followedBy(digit).string).or(generators.string("-").followedBy(onenine).followedBy(digits).flatten.string)
+
+    def fraction: Parser[String] = generators.string("").or(generators.string(".").followedBy(digits).string)
+
+    def sign: Parser[String] = generators.string("").or(generators.string("+")).or(generators.string("-"))
+
+    def exponent: Parser[String] = generators.string("").or(generators.string("E").followedBy(sign).followedBy(digits).flatten.string)
+
+    def number: Parser[JNumber] = integer.followedBy(fraction).followedBy(exponent).flatten.string.map(_.toDouble).map(JNumber)
+
+    def bool: Parser[JBool] = generators.string("true").or(generators.string("false")).map(_.toBoolean).map(JBool)
+
+    def `null`: Parser[JNull.type] = generators.string("null").map(_ => JNull)
+
+    def value: Parser[Json] = `object`.or(array).or(string).or(number).or(bool).or(`null`)
+
+    def element: Parser[Json] = whitespaces.followedBy(value).followedBy(whitespaces).flatten.map(_._2)
+
+    element
   }
 
   implicit class StringStringToString(val parser: Parser[(String, String)]) extends AnyVal {

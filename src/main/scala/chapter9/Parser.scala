@@ -1,6 +1,6 @@
 package chapter9
 
-trait Parser[T] {
+trait Parser[+T] {
   def generators: ParserGenerators
 
   def run(input: String): Either[ParseError, T]
@@ -15,7 +15,7 @@ trait Parser[T] {
    */
   def slice: Parser[String]
 
-  def or(other: => Parser[T]): Parser[T] = this.either(other).map {
+  def or[U >: T](other: => Parser[U]): Parser[U] = this.either(other).map {
     case Right(value) => value
     case Left(value) => value
   }
