@@ -1,3 +1,3 @@
 package chapter9
 
-trait ParseError
+case class ParseError(message: String)

@@ -1,6 +1,6 @@
 package chapter9.json
 
-import chapter9.Parser
+import chapter9.{Parser, ParserGenerators}
 
 trait Json
 
@@ -17,7 +17,7 @@ object Json {
 
   case class JObject(get: Map[JString, Json]) extends Json
 
-  def parser(generators: JsonParserGenerators): Parser[Json] = {
+  def parser(generators: ParserGenerators): Parser[Json] = {
     def array: Parser[JArray] =
       generators.string("[")
         .followedBy(
@@ -37,6 +37,7 @@ object Json {
         .or(
           generators.string("\\")
             .followedBy(escape)
+            .string
         )
 
     def characters: Parser[String] =

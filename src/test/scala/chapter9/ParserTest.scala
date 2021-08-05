@@ -266,7 +266,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
         val parser1 = mockParserGenerators.string(string)
         val parser2 = mockParserGenerators.char(char)
         val parserFollowedBy = parser1.followedBy(parser2)
-        val input = char + string
+        val input = s"$char$string"
 
         val result = parserFollowedBy.run(input)
 
