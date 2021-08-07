@@ -2,7 +2,6 @@ package chapter9.json
 
 import chapter9.ParseError
 import chapter9.json.Json.{JArray, JBool, JNumber, JObject, JString}
-import chapter9.myparser.MyParser
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -22,9 +21,8 @@ class JsonTest extends AnyWordSpec with Matchers {
             |    [ "HPQ", "IBM", "YHOO", "DELL", "GOOG" ]
             |}
             |""".stripMargin
-        val parser = Json.parser(MyParser)
 
-        val result = parser.run(json)
+        val result = Json.parse(json).toEither
 
         result should be(
           Right(
@@ -135,9 +133,8 @@ class JsonTest extends AnyWordSpec with Matchers {
             |    "taglib-uri": "cofax.tld",
             |    "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
             |""".stripMargin
-        val parser = Json.parser(MyParser)
 
-        val result = parser.run(json)
+        val result = Json.parse(json).toEither
 
         result.isRight should be(true)
       }
@@ -150,9 +147,8 @@ class JsonTest extends AnyWordSpec with Matchers {
             |  "test" : 123
             |]
             |""".stripMargin
-        val parser = Json.parser(MyParser)
 
-        val result = parser.run(invalidJson)
+        val result = Json.parse(invalidJson).toEither
 
         result should matchPattern {
           case Left(_: ParseError) =>
