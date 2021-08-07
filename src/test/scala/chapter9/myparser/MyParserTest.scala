@@ -1,20 +1,115 @@
-package chapter9
+package chapter9.myparser
 
-import org.scalamock.scalatest.MockFactory
+import chapter9.ParseError
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ParserTest extends AnyWordSpec with Matchers with MockFactory {
+class MyParserTest extends AnyWordSpec with Matchers {
 
-  // TODO: Should be removed, tests should be conducted on concrete implementation
-  def mockParserGenerators: ParserGenerators = mock[ParserGenerators]
+  "string" when {
+    "given a string" should {
+      "parse it when it exactly matches parser" in {
+        val string = "test"
+        val parser = MyParser.string(string)
+
+        val result = parser.run(string)
+
+        result should be(Right(string))
+      }
+
+      "parse it when only prefix matches" in {
+        val string = "test"
+        val parser = MyParser.string(string)
+        val input = string + "other"
+
+        val result = parser.run(input)
+
+        result should be(Right(string))
+      }
+
+      "return an error when it doesn't start with parser string" in {
+        val string = "test"
+        val parser = MyParser.string(string)
+        val input = "other" + string
+
+        val result = parser.run(input)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+    }
+  }
+
+  "char" when {
+    "given a char" should {
+      "parse it" in {
+        val char = 'a'
+        val parser = MyParser.char(char)
+        val input = char.toString
+
+        val result = parser.run(input)
+
+        result should be(Right(char))
+      }
+    }
+
+    "given a word that doesn't start with that char" should {
+      "return ParseError" in {
+        val parser = MyParser.char('a')
+        val input = "test"
+
+        val result = parser.run(input)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+    }
+  }
+
+  "regex" when {
+    "given a regex" should {
+      "parse the string if it matches regex" in {
+        val parser = MyParser.regex("t..t".r)
+        val input = "test"
+
+        val result = parser.run(input)
+
+        result should be(Right(input))
+      }
+
+      "return an error when regex doesn't match" in {
+        val parser = MyParser.regex("fail".r)
+        val input = "test"
+
+        val result = parser.run(input)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+    }
+  }
+
+  "succeed" when {
+    "given any string" should {
+      "return the given result" in {
+        val parser = MyParser.succeed(5)
+
+        val result = parser.run("any string")
+
+        result should be(Right(5))
+      }
+    }
+  }
 
   "or" should {
     "parse a string" when {
       "both parsers can parse it" in {
         val string = "test"
-        val parser1 = mockParserGenerators.string(string)
-        val parser2 = mockParserGenerators.string(string)
+        val parser1 = MyParser.string(string)
+        val parser2 = MyParser.string(string)
         val orParser = parser1.or(parser2)
 
         val result = orParser.run(string)
@@ -24,8 +119,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "first parser can parse it" in {
         val string = "test"
-        val parser1 = mockParserGenerators.string(string)
-        val parser2 = mockParserGenerators.string("cannot parse")
+        val parser1 = MyParser.string(string)
+        val parser2 = MyParser.string("cannot parse")
         val orParser = parser1.or(parser2)
 
         val result = orParser.run(string)
@@ -35,8 +130,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "second parser can parse it" in {
         val string = "test"
-        val parser1 = mockParserGenerators.string("cannot parse")
-        val parser2 = mockParserGenerators.string(string)
+        val parser1 = MyParser.string("cannot parse")
+        val parser2 = MyParser.string(string)
         val orParser = parser1.or(parser2)
 
         val result = orParser.run(string)
@@ -47,8 +142,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
     "return ParseError" when {
       "no parser can parse given string" in {
-        val parser1 = mockParserGenerators.string("cannot parse")
-        val parser2 = mockParserGenerators.string("also cannot parse")
+        val parser1 = MyParser.string("cannot parse")
+        val parser2 = MyParser.string("also cannot parse")
         val orParser = parser1.or(parser2)
 
         val result = orParser.run("test")
@@ -64,8 +159,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     "parse the type on the left" when {
       "only left parser can parse" in {
         val char = 'a'
-        val parser1 = mockParserGenerators.char(char)
-        val parser2 = mockParserGenerators.string('b'.toString)
+        val parser1 = MyParser.char(char)
+        val parser2 = MyParser.string('b'.toString)
         val orParser = parser1.either(parser2)
 
         val result = orParser.run(char.toString).toOption.get
@@ -75,8 +170,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "both parsers can parse" in {
         val char = 'a'
-        val parser1 = mockParserGenerators.char(char)
-        val parser2 = mockParserGenerators.string(char.toString)
+        val parser1 = MyParser.char(char)
+        val parser2 = MyParser.string(char.toString)
         val orParser = parser1.either(parser2)
 
         val result = orParser.run(char.toString).toOption.get
@@ -87,14 +182,14 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
     "parse the type on the right" when {
       "only right parser can parse" in {
-        val char = 'a'
-        val parser1 = mockParserGenerators.char('b')
-        val parser2 = mockParserGenerators.string(char.toString)
+        val string = "abc"
+        val parser1 = MyParser.char('b')
+        val parser2 = MyParser.string(string)
         val orParser = parser1.either(parser2)
 
-        val result = orParser.run(char.toString).toOption.get
+        val result = orParser.run(string).toOption.get
 
-        result should be(Right(char))
+        result should be(Right(string))
       }
     }
   }
@@ -103,62 +198,69 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     "parse a string" when {
       "number of occurrences matches the given number" in {
         val string = "test"
-        val parser = mockParserGenerators.string(string)
+        val parser = MyParser.string(string)
         val parser3 = parser.listOfN(3)
         val string3 = string * 3
 
         val result = parser3.run(string3)
 
-        result should be(Right(string3))
+        result should be(Right(List.fill(3)(string)))
       }
 
       "parser is a compound parser" in {
         val char1 = 'a'
         val char2 = 'b'
         val string6 = char1.toString * 3 + char2.toString * 2 + char1.toString
-        val parser1 = mockParserGenerators.char(char1)
-        val parser2 = mockParserGenerators.char(char2)
+        val parser1 = MyParser.char(char1)
+        val parser2 = MyParser.char(char2)
         val parserOr = parser1.or(parser2)
         val parser6 = parserOr.listOfN(6)
 
         val result = parser6.run(string6)
 
-        result should be(Right(string6))
+        result should be(Right("aaabba".toCharArray.toList))
       }
     }
 
     "return ParseError" when {
       "number of occurrences is smaller than the given number" in {
         val string = "test"
-        val parser = mockParserGenerators.string(string)
-        val parser3 = parser.listOfN(3)
-        val string6 = string * 6
-
-        val result = parser3.run(string6)
-
-        result should be(Right(string6))
-      }
-
-      "number of occurrences is greater than the given number" in {
-        val string = "test"
-        val parser = mockParserGenerators.string(string)
+        val parser = MyParser.string(string)
         val parser3 = parser.listOfN(3)
         val string2 = string * 2
 
         val result = parser3.run(string2)
 
-        result should be(Right(string2))
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
+      }
+
+      "number of occurrences is smaller than the given number for compound parser" in {
+        val string = "test"
+        val parser1 = MyParser.string(string)
+        val parser2 = MyParser.string("other")
+        val parserOr = parser1.or(parser2)
+        val parser3 = parserOr.listOfN(3)
+
+        val result = parser3.run(string)
+
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
       }
 
       "matched tokens are not consecutive" in {
         val string = "test"
-        val parser = mockParserGenerators.string(string)
+        val parser = MyParser.string(string)
         val parser3 = parser.listOfN(3)
         val stringNonConsecutive = string * 2 + "other" + string
 
         val result = parser3.run(stringNonConsecutive)
 
-        result should be(Right(stringNonConsecutive))
+        result should matchPattern {
+          case Left(_: ParseError) =>
+        }
       }
     }
   }
@@ -167,7 +269,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     "given a parser" should {
       "parse empty string" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string).many
+        val parser = MyParser.string(string).many
 
         val result = parser.run(string * 0)
 
@@ -176,7 +278,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "parse single occurrence" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string).many
+        val parser = MyParser.string(string).many
 
         val result = parser.run(string)
 
@@ -185,7 +287,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "parse multiple occurrences" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string).many
+        val parser = MyParser.string(string).many
 
         val result = parser.run(string * 5)
 
@@ -194,7 +296,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "parse when the end doesn't match" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string).many
+        val parser = MyParser.string(string).many
 
         val result = parser.run(string * 5 + "end")
 
@@ -207,7 +309,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     "given a parser" should {
       "return an error on empty string" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string).many
+        val parser = MyParser.string(string).atLeastOne
 
         val result = parser.run(string * 0)
 
@@ -218,7 +320,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "parse single occurrence" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string).many
+        val parser = MyParser.string(string).atLeastOne
 
         val result = parser.run(string)
 
@@ -227,7 +329,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "parse multiple occurrences" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string).many
+        val parser = MyParser.string(string).atLeastOne
 
         val result = parser.run(string * 5)
 
@@ -236,7 +338,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "parse when the end doesn't match" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string).many
+        val parser = MyParser.string(string).atLeastOne
 
         val result = parser.run(string * 5 + "end")
 
@@ -250,8 +352,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
       "parse when string is followed by char" in {
         val string = "abc"
         val char = 'd'
-        val parser1 = mockParserGenerators.string(string)
-        val parser2 = mockParserGenerators.char(char)
+        val parser1 = MyParser.string(string)
+        val parser2 = MyParser.char(char)
         val parserFollowedBy = parser1.followedBy(parser2)
         val input = string + char
 
@@ -263,8 +365,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
       "return an error when the order is not correct" in {
         val string = "abc"
         val char = 'd'
-        val parser1 = mockParserGenerators.string(string)
-        val parser2 = mockParserGenerators.char(char)
+        val parser1 = MyParser.string(string)
+        val parser2 = MyParser.char(char)
         val parserFollowedBy = parser1.followedBy(parser2)
         val input = s"$char$string"
 
@@ -277,8 +379,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "return an error when first parser fails" in {
         val char = 'a'
-        val parser1 = mockParserGenerators.string("fail")
-        val parser2 = mockParserGenerators.char(char)
+        val parser1 = MyParser.string("fail")
+        val parser2 = MyParser.char(char)
         val parserFollowedBy = parser1.followedBy(parser2)
         val input = "test" + char
 
@@ -291,8 +393,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "return an error when second parser fails" in {
         val string = "abc"
-        val parser1 = mockParserGenerators.string(string)
-        val parser2 = mockParserGenerators.char('a')
+        val parser1 = MyParser.string(string)
+        val parser2 = MyParser.char('a')
         val parserFollowedBy = parser1.followedBy(parser2)
         val input = string + 'b'
 
@@ -309,7 +411,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     "given a parser" should {
       "map over value with given function" in {
         val string = "abc"
-        val parser = mockParserGenerators.string(string)
+        val parser = MyParser.string(string)
 
         val mapped = parser.map(_.length)
         val result = mapped.run(string)
@@ -318,7 +420,7 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
       }
 
       "return the same error as without mapping in case of failure" in {
-        val parser = mockParserGenerators.string("fail")
+        val parser = MyParser.string("fail")
         val input = "test"
 
         val result = parser.run(input)
@@ -331,48 +433,11 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
     }
   }
 
-  "slice" when {
-    "given a matching string" should {
-      "return the whole input if it matches" in {
-        val string = "aaaaa"
-        val parser = mockParserGenerators.char('a').many.slice
-
-        val result = parser.run(string)
-
-        result should be(Right(string))
-      }
-
-      "return the beginning of the input when the end doesn't match" in {
-        val beginning = "aaaaa"
-        val end = "bbb"
-        val parser = mockParserGenerators.char('a').many.slice
-        val input = beginning + end
-
-        val result = parser.run(input)
-
-        result should be(Right(beginning))
-      }
-    }
-
-    "given a non matching string" should {
-      "return a parse error" in {
-        val parser = mockParserGenerators.char('a').many.slice
-
-        val result = parser.run("fail")
-
-        result should matchPattern {
-          case Left(_: ParseError) =>
-        }
-      }
-    }
-  }
-
   "flatMap" should {
-    // TODO: Logic here might not be correct
     "return an error" when {
       "first parser fails" in {
-        val parser1 = mockParserGenerators.string("test")
-        val parser2 = parser1.flatMap(s => mockParserGenerators.char(s.charAt(0)))
+        val parser1 = MyParser.string("test")
+        val parser2 = parser1.flatMap(s => MyParser.char(s.charAt(0)))
 
         val result = parser2.run("fail")
 
@@ -383,8 +448,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "second parser fails" in {
         val string = "test"
-        val parser1 = mockParserGenerators.string(string)
-        val parser2 = parser1.flatMap(s => mockParserGenerators.char(s.charAt(0)))
+        val parser1 = MyParser.string(string)
+        val parser2 = parser1.flatMap(s => MyParser.char(s.charAt(0)))
 
         val result = parser2.run("testx")
 
@@ -396,24 +461,25 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
     "return a parser from argument" when {
       "both parsers succeed" in {
-        val string = "a"
-        val parser1 = mockParserGenerators.string(string)
-        val parser2 = parser1.flatMap(s => mockParserGenerators.char(s.charAt(0)))
+        val string = "abc"
+        val char = string.charAt(0)
+        val parser1 = MyParser.string(string)
+        val parser2 = parser1.flatMap(s => MyParser.char(s.charAt(0)))
+        val input = s"$string$char"
 
-        val result = parser2.run(string)
+        val result = parser2.run(input)
 
-        result should be(Right(string))
+        result should be(Right(char))
       }
     }
   }
 
   "map2" should {
-    // TODO: Logic here might not be correct
     "return an error" when {
       "left parser fails" in {
         val char = 'a'
-        val parser1 = mockParserGenerators.string("fail")
-        val parser2 = mockParserGenerators.char(char)
+        val parser1 = MyParser.string("fail")
+        val parser2 = MyParser.char(char)
         val map2Parser = parser1.map2(parser2)(_ + _)
 
         val result = map2Parser.run(char.toString)
@@ -425,8 +491,8 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
       "right parser fails" in {
         val string = "test"
-        val parser1 = mockParserGenerators.string(string)
-        val parser2 = mockParserGenerators.char('a')
+        val parser1 = MyParser.string(string)
+        val parser2 = MyParser.char('a')
         val map2Parser = parser1.map2(parser2)(_ + _)
 
         val result = map2Parser.run(string)
@@ -439,14 +505,16 @@ class ParserTest extends AnyWordSpec with Matchers with MockFactory {
 
     "parse input" when {
       "both parsers succeed" in {
-        val char = 'a'
-        val parser1 = mockParserGenerators.string(char.toString)
-        val parser2 = mockParserGenerators.char(char)
+        val string = "abc"
+        val char = 'd'
+        val parser1 = MyParser.string(string)
+        val parser2 = MyParser.char(char)
         val map2Parser = parser1.map2(parser2)(_ + _)
+        val input = s"$string$char"
 
-        val result = map2Parser.run(char.toString)
+        val result = map2Parser.run(input)
 
-        result should be(Right("aa"))
+        result should be(Right(input))
       }
     }
   }

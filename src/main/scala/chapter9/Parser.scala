@@ -3,21 +3,17 @@ package chapter9
 trait Parser[+T] {
   def generators: ParserGenerators
 
+  def parseResult(input: String): Result[T]
+
   def run(input: String): Either[ParseError, T]
 
   def either[U](other: => Parser[U]): Parser[Either[T, U]]
 
   def flatMap[U](f: T => Parser[U]): Parser[U]
 
-  /**
-   * Returns the part of the string that is examined when the
-   * parser is successful.
-   */
-  def slice: Parser[String]
-
   def or[U >: T](other: => Parser[U]): Parser[U] = this.either(other).map {
-    case Right(value) => value
     case Left(value) => value
+    case Right(value) => value
   }
 
   def listOfN(n: Int): Parser[List[T]] =
@@ -34,7 +30,7 @@ trait Parser[+T] {
   }
 
   def followedBy[U](other: => Parser[U]): Parser[(T, U)] =
-    this.flatMap(t => other.map((t, _)))
+    map2(other)((t, u) => (t, u))
 
   def map[U](f: T => U): Parser[U] =
     this.flatMap(t => generators.succeed(f(t)))
@@ -42,6 +38,12 @@ trait Parser[+T] {
   def map2[U, V](parser2: => Parser[U])(f: (T, U) => V): Parser[V] =
     this.flatMap(t => parser2.map(f(t, _)))
 }
+
+sealed trait Result[+A]
+
+case class Success[+A](a: A, charsConsumed: Int) extends Result[A]
+
+case class Failure(error: ParseError) extends Result[Nothing]
 
 object Parser {
   implicit class Flatten[T, U, V](val parser: Parser[((T, U), V)]) extends AnyVal {
