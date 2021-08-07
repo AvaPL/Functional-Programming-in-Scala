@@ -9,11 +9,6 @@ case class MyParser[+A](parse: String => Result[A]) extends Parser[A] {
 
   override def parseResult(input: String): Result[A] = parse(input)
 
-  override def run(input: String): Either[ParseError, A] = parseResult(input) match {
-    case Success(a, _) => Right(a)
-    case Failure(error) => Left(error)
-  }
-
   override def either[U](other: => Parser[U]): Parser[Either[A, U]] = MyParser { input =>
     this.parseResult(input) match {
       case Success(a, charsConsumed) => Success(Left(a), charsConsumed)
@@ -44,7 +39,7 @@ object MyParser extends ParserGenerators {
   }
 
   override def regex(regex: Regex): Parser[String] = MyParser { input =>
-    regex.findFirstIn(input) match {
+    regex.findPrefixOf(input) match {
       case Some(string) => Success(string, string.length)
       case None => Failure(ParseError(s"Expected '${regex.regex}' but got '$input'"))
     }

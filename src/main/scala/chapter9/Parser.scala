@@ -5,11 +5,14 @@ trait Parser[+T] {
 
   def parseResult(input: String): Result[T]
 
-  def run(input: String): Either[ParseError, T]
-
   def either[U](other: => Parser[U]): Parser[Either[T, U]]
 
   def flatMap[U](f: T => Parser[U]): Parser[U]
+
+  def run(input: String): Either[ParseError, T] = parseResult(input) match {
+    case Success(a, _) => Right(a)
+    case Failure(error) => Left(error)
+  }
 
   def or[U >: T](other: => Parser[U]): Parser[U] = this.either(other).map {
     case Left(value) => value

@@ -21,8 +21,8 @@ object Json {
     def array: Parser[JArray] =
       generators.string("[")
         .followedBy(
-          whitespaces.map(_ => IndexedSeq.empty)
-            .or(elements)
+          elements
+            .or(whitespaces.map(_ => IndexedSeq.empty))
         )
         .followedBy(generators.string("]"))
         .flatten.map(_._2).map(JArray)
@@ -41,23 +41,20 @@ object Json {
         )
 
     def characters: Parser[String] =
-      generators.string("")
-        .or(
-          character
-            .followedBy(characters)
-            .string
-        )
+      character
+        .followedBy(characters)
+        .string
+        .or(generators.string(""))
 
     def digit: Parser[String] =
       generators.string("0")
         .or(onenine)
 
     def digits: Parser[String] =
-      digit.or(
-        digit
-          .followedBy(digits)
-          .string
-      )
+      digit
+        .followedBy(digits)
+        .string
+        .or(digit)
 
     def element: Parser[Json] =
       whitespaces
@@ -66,13 +63,11 @@ object Json {
         .flatten.map(_._2)
 
     def elements: Parser[IndexedSeq[Json]] =
-      element.map(IndexedSeq(_))
-        .or(
-          element
-            .followedBy(generators.string(","))
-            .followedBy(elements)
-            .flatten.map { case (element, _, elements) => element +: elements }
-        )
+      element
+        .followedBy(generators.string(","))
+        .followedBy(elements)
+        .flatten.map { case (element, _, elements) => element +: elements }
+        .or(element.map(IndexedSeq(_)))
 
     def escape: Parser[String] =
       generators.regex("""["\\/bfnrtu]""".r)
@@ -83,33 +78,26 @@ object Json {
         )
 
     def exponent: Parser[String] =
-      generators.string("")
-        .or(
-          generators.string("E")
-            .followedBy(sign)
-            .followedBy(digits)
-            .flatten.string
-        )
+      generators.regex("[eE]".r)
+        .followedBy(sign)
+        .followedBy(digits)
+        .flatten.string
+        .or(generators.string(""))
 
     def fraction: Parser[String] =
-      generators.string("")
-        .or(
-          generators.string(".")
-            .followedBy(digits)
-            .string
-        )
+      generators.string(".")
+        .followedBy(digits)
+        .string
+        .or(generators.string(""))
 
     def hex: Parser[String] =
       digit
         .or(generators.regex("[a-fA-F]".r))
 
     def integer: Parser[String] =
-      digit
-        .or(
-          onenine
-            .followedBy(digits)
-            .string
-        )
+      onenine
+        .followedBy(digits)
+        .string
         .or(
           generators.string("-")
             .followedBy(digit)
@@ -120,7 +108,7 @@ object Json {
             .followedBy(onenine)
             .followedBy(digits)
             .flatten.string
-        )
+        ).or(digit)
 
     def member: Parser[(JString, Json)] =
       whitespaces
@@ -131,13 +119,11 @@ object Json {
         .map { case ((((_, string), _), _), element) => (string, element) }
 
     def members: Parser[Map[JString, Json]] =
-      member.map(Map(_))
-        .or(
-          member
-            .followedBy(generators.string(","))
-            .followedBy(members)
-            .flatten.map { case (member, _, members) => members + member }
-        )
+      member
+        .followedBy(generators.string(","))
+        .followedBy(members)
+        .flatten.map { case (member, _, members) => members + member }
+        .or(member.map(Map(_)))
 
     def `null`: Parser[JNull.type] =
       generators.string("null").map(_ => JNull)
@@ -151,8 +137,8 @@ object Json {
     def `object`: Parser[JObject] =
       generators.string("{")
         .followedBy(
-          whitespaces.map(_ => Map[JString, Json]())
-            .or(members)
+          members
+            .or(whitespaces.map(_ => Map[JString, Json]()))
         )
         .followedBy(generators.string("}"))
         .flatten.map(_._2).map(JObject)
@@ -161,15 +147,15 @@ object Json {
       generators.regex("[1-9]".r)
 
     def sign: Parser[String] =
-      generators.string("")
-        .or(generators.string("+"))
+      generators.string("+")
         .or(generators.string("-"))
+        .or(generators.string(""))
 
     def string: Parser[JString] =
       generators.string("\"")
         .followedBy(characters)
         .followedBy(generators.string("\""))
-        .flatten.map(_.toString).map(JString)
+        .flatten.map { case (_, string, _) => string }.map(JString)
 
     def value: Parser[Json] =
       `object`
