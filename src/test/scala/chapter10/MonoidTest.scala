@@ -88,4 +88,52 @@ class MonoidTest extends AnyWordSpec with Matchers with ScalaCheckDrivenProperty
       }
     }
   }
+
+  "concatenate" when {
+    "given a list of strings" should {
+      "concatenate them with string monoid" in {
+        val strings = List("quick", "brown", "fox")
+
+        val result = Monoid.concatenate(strings, Monoid.string)
+
+        result should be(strings.mkString)
+      }
+    }
+  }
+
+  "foldMap" when {
+    "given a list of ints" should {
+      "concatenate ints as strings" in {
+        val ints = List(1, 3, 5)
+
+        val result = Monoid.foldMap(ints, Monoid.string)(_.toString)
+
+        result should be(ints.mkString)
+      }
+    }
+  }
+
+  "foldRight" when {
+    "used on a list" should {
+      "concatenate strings from right" in {
+        val strings = List("a", "b", "c")
+
+        val result = Monoid.foldRight(strings)("")(_ + _)
+
+        result should be("cba")
+      }
+    }
+  }
+
+  "foldLeft" when {
+    "used on a list" should {
+      "concatenate strings from left" in {
+        val strings = List("a", "b", "c")
+
+        val result = Monoid.foldLeft(strings)("")(_ + _)
+
+        result should be("abc")
+      }
+    }
+  }
 }

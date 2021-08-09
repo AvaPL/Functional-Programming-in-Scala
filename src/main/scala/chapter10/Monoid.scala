@@ -54,4 +54,16 @@ object Monoid {
 
     override def op(a1: A => A, a2: A => A): A => A = a1.andThen(a2)
   }
+
+  def concatenate[A](list: List[A], monoid: Monoid[A]): A =
+    list.foldLeft(monoid.zero)(monoid.op)
+
+  def foldMap[A, B](list: List[A], monoid: Monoid[B])(f: A => B): B =
+    concatenate(list.map(f), monoid)
+
+  def foldRight[A, B](list: List[A])(z: B)(f: (A, B) => B): B =
+    foldMap(list, endofunction[B])(a => f(a, _))(z)
+
+  def foldLeft[A, B](list: List[A])(z: B)(f: (B, A) => B): B =
+    foldMap(list, endofunction[B])(a => f(_, a))(z)
 }
