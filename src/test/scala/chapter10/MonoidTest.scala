@@ -1,10 +1,12 @@
 package chapter10
 
+import chapter7.Nonblocking.Par
 import org.scalacheck.Arbitrary
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
+import java.util.concurrent.{Executors, ThreadPoolExecutor}
 import scala.reflect.ClassTag
 
 class MonoidTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyChecks {
@@ -111,6 +113,16 @@ class MonoidTest extends AnyWordSpec with Matchers with ScalaCheckDrivenProperty
         result should be(ints.mkString)
       }
     }
+
+    "given indexed sequence of ints" should {
+      "concatenate ints as string" in {
+        val ints = IndexedSeq(1, 3, 5)
+
+        val result = Monoid.foldMap(ints, Monoid.string)(_.toString)
+
+        result should be(ints.mkString)
+      }
+    }
   }
 
   "foldRight" when {
@@ -133,6 +145,33 @@ class MonoidTest extends AnyWordSpec with Matchers with ScalaCheckDrivenProperty
         val result = Monoid.foldLeft(strings)("")(_ + _)
 
         result should be("abc")
+      }
+    }
+  }
+
+  "par" when {
+    "given a monoid" should {
+      "return a product of ints in list" in {
+        val strings = List(2, 3, 4).map(Par.unit)
+        val monoid = Monoid.par(Monoid.intMultiplication)
+
+        val result = Monoid.concatenate(strings, monoid)
+
+        val executorService = Executors.newFixedThreadPool(2)
+        Par.run(executorService)(result) should be(2 * 3 * 4)
+      }
+    }
+  }
+
+  "parFoldMap" when {
+    "given indexed sequence" should {
+      "concatenate ints as string" in {
+        val ints = IndexedSeq(1, 3, 5).map(Par.unit)
+
+        val result = Monoid.parFoldMap(ints, Monoid.string)(_.toString)
+
+        val executorService = Executors.newFixedThreadPool(2)
+        Par.run(executorService)(result) should be(ints.mkString)
       }
     }
   }

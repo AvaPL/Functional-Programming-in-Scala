@@ -1,5 +1,8 @@
 package chapter10
 
+import chapter7.Nonblocking.Par
+import chapter7.Nonblocking.Par.toParOps
+
 trait Monoid[A] {
   def zero: A
 
@@ -66,4 +69,23 @@ object Monoid {
 
   def foldLeft[A, B](list: List[A])(z: B)(f: (B, A) => B): B =
     foldMap(list, endofunction[B])(a => f(_, a))(z)
+
+  def foldMap[A, B](seq: IndexedSeq[A], monoid: Monoid[B])(f: A => B): B = {
+    seq.length match {
+      case 0 => monoid.zero
+      case 1 => f(seq.head)
+      case length =>
+        val (left, right) = seq.splitAt(length / 2)
+        monoid.op(foldMap(left, monoid)(f), foldMap(right, monoid)(f))
+    }
+  }
+
+  def par[A](monoid: Monoid[A]): Monoid[Par[A]] = new Monoid[Par[A]] {
+    override def zero: Par[A] = Par.unit(monoid.zero)
+
+    override def op(a1: Par[A], a2: Par[A]): Par[A] = Par.map2(a1, a2)(monoid.op)
+  }
+
+  def parFoldMap[A, B](seq: IndexedSeq[A], monoid: Monoid[B])(f: A => B): Par[B] =
+    Par.parMap(seq)(f).flatMap(foldMap(_, par(monoid))(Par.lazyUnit(_)))
 }
