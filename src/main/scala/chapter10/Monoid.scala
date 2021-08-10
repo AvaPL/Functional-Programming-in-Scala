@@ -1,6 +1,6 @@
 package chapter10
 
-import chapter10.wordcount.{Part, Stub, WordCount}
+import chapter10.wordcount.WordCount
 import chapter7.Nonblocking.Par
 import chapter7.Nonblocking.Par.toParOps
 
