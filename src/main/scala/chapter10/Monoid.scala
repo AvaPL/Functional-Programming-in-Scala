@@ -1,5 +1,6 @@
 package chapter10
 
+import chapter10.wordcount.{Part, Stub, WordCount}
 import chapter7.Nonblocking.Par
 import chapter7.Nonblocking.Par.toParOps
 
@@ -56,6 +57,16 @@ object Monoid {
     override def zero: A => A = identity
 
     override def op(a1: A => A, a2: A => A): A => A = a1.andThen(a2)
+  }
+
+  val wordCount: Monoid[WordCount] = new Monoid[WordCount] {
+    override def zero: WordCount = WordCount("", 0, "")
+
+    override def op(a1: WordCount, a2: WordCount): WordCount = {
+      val hasInnerWord = (a1.rightStub + a2.leftStub).nonEmpty
+      val innerWords = if (hasInnerWord) 1 else 0
+      WordCount(a1.leftStub, a1.words + innerWords + a2.words, a2.rightStub)
+    }
   }
 
   def concatenate[A](list: List[A], monoid: Monoid[A]): A =
