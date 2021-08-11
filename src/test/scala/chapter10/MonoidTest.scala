@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-import java.util.concurrent.{Executors, ThreadPoolExecutor}
+import java.util.concurrent.Executors
 import scala.reflect.ClassTag
 
 class MonoidTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyChecks {
