@@ -1,5 +1,7 @@
 package chapter10
 
+import chapter10.monoid.Monoid
+
 object Chapter10 {
   def isSorted(seq: IndexedSeq[Int]): Boolean = {
     // Holds a tuple (isSorted, minValue, maxValue)

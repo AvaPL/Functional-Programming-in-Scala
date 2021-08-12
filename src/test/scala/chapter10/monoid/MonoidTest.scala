@@ -1,4 +1,4 @@
-package chapter10
+package chapter10.monoid
 
 import chapter7.Nonblocking.Par
 import org.scalacheck.Arbitrary
