@@ -20,29 +20,29 @@ trait Foldable[F[_]] {
 }
 
 object Foldable {
-  val listFoldable: Foldable[List] = new Foldable[List] {
+  val list: Foldable[List] = new Foldable[List] {
     override def foldMap[A, B](fa: List[A])(monoid: Monoid[B])(f: A => B): B =
       fa.map(f).foldLeft(monoid.zero)(monoid.op)
 
     override def toList[A](fa: List[A]): List[A] = fa
   }
 
-  val indexedSeqFoldable: Foldable[IndexedSeq] = new Foldable[IndexedSeq] {
+  val indexedSeq: Foldable[IndexedSeq] = new Foldable[IndexedSeq] {
     override def foldMap[A, B](fa: IndexedSeq[A])(monoid: Monoid[B])(f: A => B): B =
       Monoid.foldMap(fa, monoid)(f)
   }
 
-  val foldableLazyList: Foldable[LazyList] = new Foldable[LazyList] {
+  val lazyList: Foldable[LazyList] = new Foldable[LazyList] {
     override def foldMap[A, B](fa: LazyList[A])(monoid: Monoid[B])(f: A => B): B =
       fa.map(f).foldLeft(monoid.zero)(monoid.op)
   }
 
-  val foldableTree: Foldable[Tree] = new Foldable[Tree] {
+  val tree: Foldable[Tree] = new Foldable[Tree] {
     override def foldMap[A, B](fa: Tree[A])(monoid: Monoid[B])(f: A => B): B =
       fa.fold(f)(monoid.op)
   }
 
-  val foldableOption: Foldable[Option] = new Foldable[Option] {
+  val option: Foldable[Option] = new Foldable[Option] {
     override def foldMap[A, B](fa: Option[A])(monoid: Monoid[B])(f: A => B): B =
       fa.fold(monoid.zero)(f)
   }
