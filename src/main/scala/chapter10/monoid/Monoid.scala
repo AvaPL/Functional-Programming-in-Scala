@@ -88,4 +88,29 @@ object Monoid {
 
   def parFoldMap[A, B](seq: IndexedSeq[A], monoid: Monoid[B])(f: A => B): Par[B] =
     Par.parMap(seq)(f).flatMap(foldMap(_, par(monoid))(Par.lazyUnit(_)))
+
+  def product[A, B](a: Monoid[A], b: Monoid[B]): Monoid[(A, B)] = new Monoid[(A, B)] {
+    override def zero: (A, B) = (a.zero, b.zero)
+
+    override def op(a1: (A, B), a2: (A, B)): (A, B) = (a1, a2) match {
+      case ((a1, b1), (a2, b2)) => (a.op(a1, a2), b.op(b1, b2))
+    }
+  }
+
+  def function[A, B](b: Monoid[B]): Monoid[A => B] = new Monoid[A => B] {
+    override def zero: A => B = _ => b.zero
+
+    override def op(a1: A => B, a2: A => B): A => B =
+      a => b.op(a1(a), a2(a))
+  }
+
+  def mapMerge[K, V](monoid: Monoid[V]): Monoid[Map[K, V]] = new Monoid[Map[K, V]] {
+    def zero: Map[K, V] = Map()
+
+    def op(a: Map[K, V], b: Map[K, V]): Map[K, V] =
+      (a.keySet ++ b.keySet).foldLeft(zero) { (acc, key) =>
+        val value = monoid.op(a.getOrElse(key, monoid.zero), b.getOrElse(key, monoid.zero))
+        acc.updated(key, value)
+      }
+  }
 }

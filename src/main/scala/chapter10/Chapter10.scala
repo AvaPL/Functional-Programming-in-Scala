@@ -1,5 +1,6 @@
 package chapter10
 
+import chapter10.foldable.Foldable
 import chapter10.monoid.Monoid
 
 object Chapter10 {
@@ -16,5 +17,10 @@ object Chapter10 {
       }
     }
     Monoid.foldMap(seq, sortedMonoid)(i => (true, i, i))._1
+  }
+
+  def bag[A](seq: IndexedSeq[A]): Map[A, Int] = {
+    val monoid = Monoid.mapMerge[A, Int](Monoid.intAddition)
+    Foldable.indexedSeq.foldMap(seq)(monoid)(a => Map(a -> 1))
   }
 }

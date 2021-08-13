@@ -175,4 +175,47 @@ class MonoidTest extends AnyWordSpec with Matchers with ScalaCheckDrivenProperty
       }
     }
   }
+
+  checkMonoid(Monoid.product(Monoid.string, Monoid.intMultiplication)) {
+    case ((string1, int1), (string2, int2)) => (string1 + string2, int1 * int2)
+  }
+
+  "function" when {
+    "op is used on two functions" should {
+      "return concatenation of their results" in {
+        def a1(int: Int): Int = int + 10
+
+        def a2(int: Int): Int = int * 10
+
+        val add = Monoid.intAddition
+
+        // (5 + 10) + (5 * 10) = 65
+        Monoid.function(add).op(a1, a2)(5) should be(65)
+      }
+    }
+
+    "zero is used left" should {
+      "use only right function" in {
+        val add = Monoid.intAddition
+        val zero = Monoid.function(add).zero
+
+        def a2(int: Int): Int = int * 10
+
+        // 5 * 10 = 10
+        Monoid.function(add).op(zero, a2)(5) should be(50)
+      }
+    }
+
+    "zero is used right" should {
+      "use only left function" in {
+        val add = Monoid.intAddition
+        val zero = Monoid.function(add).zero
+
+        def a1(int: Int): Int = int + 10
+
+        // 5 + 10 = 15
+        Monoid.function(add).op(a1, zero)(5) should be(15)
+      }
+    }
+  }
 }

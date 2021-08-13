@@ -25,4 +25,61 @@ class Chapter10Test extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "bag" when {
+    "given an empty sequence" should {
+      "return empty map" in {
+        val seq = IndexedSeq.empty[Int]
+
+        val result = Chapter10.bag(seq)
+
+        result should be(Map())
+      }
+    }
+
+    "given a sequence with one element" should {
+      "return map with that element mapped to 1" in {
+        val seq = IndexedSeq("a")
+
+        val result = Chapter10.bag(seq)
+
+        result should be(Map("a" -> 1))
+      }
+    }
+
+    "given a sequence with multiple occurrences of the same element" should {
+      "count occurrences of that element" in {
+        val seq = IndexedSeq.fill(10)("a")
+
+        val result = Chapter10.bag(seq)
+
+        result should be(Map("a" -> 10))
+      }
+    }
+
+    "given a sequence with only distinct elements" should {
+      "map every element to 1" in {
+        val seq = IndexedSeq("a", "b", "c", "d")
+
+        val result = Chapter10.bag(seq)
+
+        val expected = seq.map(_ -> 1).toMap
+        result should be(expected)
+      }
+    }
+
+    "given a sequence with only some elements with multiple occurrences" should {
+      "assign count to every element" in {
+        val ab = IndexedSeq("a", "b")
+        val bc = IndexedSeq("b", "c")
+        val cd = IndexedSeq("c", "d")
+        val seq = ab ++ bc ++ cd
+
+        val result = Chapter10.bag(seq)
+
+        val expected = Map("a" -> 1, "b" -> 2, "c" -> 2, "d" -> 1)
+        result should be(expected)
+      }
+    }
+  }
 }
