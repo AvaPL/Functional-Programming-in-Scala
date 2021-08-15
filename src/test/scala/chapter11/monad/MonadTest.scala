@@ -79,20 +79,28 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
     }
   }
 
-  // TODO: Check other monads
   checkAssociativeLaw(Monad.option)((i: Int) => Some(i.toString))(_.headOption)(_.toString.toIntOption)
 
-  def checkAssociativeLaw[F[_], A, B, C, D]
+  checkAssociativeLaw(Monad.list)((i: Int) => List(i.toString))(s => List.fill(5)(s))(s => s.split("").toList)
+
+  checkAssociativeLaw(Monad.lazyList)((i: Int) => LazyList(i.toString))(s => LazyList.fill(5)(s))(s => LazyList.from(s.split("")))
+
+  // TODO: Write checks for other monads.
+
+  def checkAssociativeLaw[F[_], A, B, C, D, E]
   (monad: Monad[F])
   (f: A => F[B])
   (g: B => F[C])
-  (h: C => F[D])
+  (h: C => F[D], equals: (F[D], F[D]) => Boolean = (x: F[D], y: F[D]) => x == y)
   (implicit monadType: ClassTag[F[_]], arbitrary: Arbitrary[A]): Unit = {
     s"Monad[$monadType]" should {
       "obey associative law" in {
         import monad.compose
         forAll { a: A =>
-          compose(compose(f, g), h)(a) should be(compose(f, compose(g, h))(a))
+          val left = compose(compose(f, g), h)(a)
+          val right = compose(f, compose(g, h))(a)
+
+          equals(left, right) should be(true)
         }
       }
     }
