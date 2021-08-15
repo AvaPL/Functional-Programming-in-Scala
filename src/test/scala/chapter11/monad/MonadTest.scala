@@ -1,9 +1,13 @@
 package chapter11.monad
 
+import org.scalacheck.Arbitrary
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class MonadTest extends AnyWordSpec with Matchers {
+import scala.reflect.ClassTag
+
+class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyChecks {
   "filterM" when {
     "used with List monad" should {
       "return Nil when no booleans are supplied" in {
@@ -57,6 +61,39 @@ class MonadTest extends AnyWordSpec with Matchers {
         val result = Monad.option.filterM(list)(i => Option.when(i % 2 != 0)(i % 3 != 0))
 
         result should be(None)
+      }
+    }
+  }
+
+  "compose" when {
+    "used on two functions" should {
+      "create a composed function" in {
+        val function1 = (i: Int) => Some(i.toString)
+        val function2 = (s: String) => Some(s * 3)
+        val composed = Monad.option.compose(function1, function2)
+
+        val result = composed(5)
+
+        result should be(Some("555"))
+      }
+    }
+  }
+
+  // TODO: Check other monads
+  checkAssociativeLaw(Monad.option)((i: Int) => Some(i.toString))(_.headOption)(_.toString.toIntOption)
+
+  def checkAssociativeLaw[F[_], A, B, C, D]
+  (monad: Monad[F])
+  (f: A => F[B])
+  (g: B => F[C])
+  (h: C => F[D])
+  (implicit monadType: ClassTag[F[_]], arbitrary: Arbitrary[A]): Unit = {
+    s"Monad[$monadType]" should {
+      "obey associative law" in {
+        import monad.compose
+        forAll { a: A =>
+          compose(compose(f, g), h)(a) should be(compose(f, compose(g, h))(a))
+        }
       }
     }
   }
