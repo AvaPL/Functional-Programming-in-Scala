@@ -1,10 +1,15 @@
 package chapter11.monad
 
+import chapter6.{Rng, State}
+import chapter7.Nonblocking.Par
+import chapter8.Gen
+import chapter9.Parser
 import org.scalacheck.Arbitrary
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
+import java.util.concurrent.Executors
 import scala.reflect.ClassTag
 
 class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyChecks {
@@ -85,13 +90,11 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
 
   checkAssociativeLaw(Monad.lazyList)((i: Int) => LazyList(i.toString))(s => LazyList.fill(5)(s))(s => LazyList.from(s.split("")))
 
-  // TODO: Write checks for other monads.
-
   def checkAssociativeLaw[F[_], A, B, C, D, E]
   (monad: Monad[F])
   (f: A => F[B])
   (g: B => F[C])
-  (h: C => F[D], equals: (F[D], F[D]) => Boolean = (x: F[D], y: F[D]) => x == y)
+  (h: C => F[D])
   (implicit monadType: ClassTag[F[_]], arbitrary: Arbitrary[A]): Unit = {
     s"Monad[$monadType]" should {
       "obey associative law" in {
@@ -100,8 +103,88 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
           val left = compose(compose(f, g), h)(a)
           val right = compose(f, compose(g, h))(a)
 
-          equals(left, right) should be(true)
+          left should be(right)
         }
+      }
+    }
+  }
+
+  "gen" should {
+    import Monad.gen.compose
+    "obey associative law" in {
+      val f = (i: Int) => Gen.unit(i.toString)
+      val g = (s: String) => Gen.union(Gen.unit(s), Gen.unit(255.toString))
+      val h = (s: String) => Gen.choose(s.toInt, s.toInt + 10)
+      val rng = Rng.Simple(0)
+
+      forAll { i: Int =>
+        val leftGen = compose(compose(f, g), h)(i)
+        val rightGen = compose(f, compose(g, h))(i)
+
+        val left = leftGen.sample.run(rng)._1
+        val right = rightGen.sample.run(rng)._1
+
+        left should be(right)
+      }
+    }
+  }
+
+  "par" should {
+    import Monad.par.compose
+    "obey associative law" in {
+      val f = (i: Int) => Par.unit(i.toString)
+      val g = (s: String) => Par.lazyUnit(s * 3)
+      val h = (s: String) => Par.delay(s.split(""))
+
+      forAll { i: Int =>
+        val leftPar = compose(compose(f, g), h)(i)
+        val rightPar = compose(f, compose(g, h))(i)
+        val executorService = Executors.newFixedThreadPool(2)
+
+        val left = Par.run(executorService)(leftPar)
+        val right = Par.run(executorService)(rightPar)
+
+        left should be(right)
+      }
+    }
+  }
+
+  "parser" should {
+    import Monad.parser.compose
+    "obey associative law" in {
+      val f = (i: Int) => Parser.string(i.toString)
+      val g = (s: String) => Parser.regex(s.r)
+      val h = (s: String) => Parser.char(s.head)
+
+      forAll { (i: Int, s: String) =>
+        val leftParser = compose(compose(f, g), h)(i)
+        val rightParser = compose(f, compose(g, h))(i)
+
+        val left = leftParser.parse(s)
+        val right = rightParser.parse(s)
+
+        left should be(right)
+      }
+    }
+  }
+
+  "state" should {
+    val monad = Monad.state[Rng]
+    import monad.compose
+    "obey associative law" in {
+      val f = (i: Int) => State.unit[Rng, Int](i)
+      val g = (i: Int) => State.sequence[Rng, String](List.fill(i.min(100))(State.unit[Rng, String](i.toString)))
+      val h = (s: List[String]) => State.unit[Rng, String](s.mkString(", "))
+      val rng = Rng.Simple(0)
+
+      forAll { i: Int =>
+        val leftState = compose(compose(f, g), h)(i)
+        val rightState = compose(f, compose(g, h))(i)
+
+        val left = leftState.run(rng)._1
+        val right = rightState.run(rng)._1
+
+        left should be(right)
       }
     }
   }
