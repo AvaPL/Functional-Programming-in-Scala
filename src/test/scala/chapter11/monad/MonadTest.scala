@@ -110,12 +110,13 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
   }
 
   "gen" should {
-    import Monad.gen.compose
+    import Monad.gen.{compose, unit}
+    val rng = Rng.Simple(0)
+
     "obey associative law" in {
       val f = (i: Int) => Gen.unit(i.toString)
       val g = (s: String) => Gen.union(Gen.unit(s), Gen.unit(255.toString))
       val h = (s: String) => Gen.choose(s.toInt, s.toInt + 10)
-      val rng = Rng.Simple(0)
 
       forAll { i: Int =>
         val leftGen = compose(compose(f, g), h)(i)
@@ -127,10 +128,25 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
         left should be(right)
       }
     }
+
+    "obey identity laws" in {
+      forAll { i: Int =>
+        val f = (i: Int) => Gen.unit(i.toString)
+        val leftGen = compose(f, unit[String])(i)
+        val rightGen = compose(unit[Int], f)(i)
+
+        val fResult = f(i).sample.run(rng)._1
+        val left = leftGen.sample.run(rng)._1
+        val right = rightGen.sample.run(rng)._1
+
+        left should be(fResult)
+        right should be(fResult)
+      }
+    }
   }
 
   "par" should {
-    import Monad.par.compose
+    import Monad.par.{compose, unit}
     "obey associative law" in {
       val f = (i: Int) => Par.unit(i.toString)
       val g = (s: String) => Par.lazyUnit(s * 3)
@@ -147,10 +163,26 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
         left should be(right)
       }
     }
+
+    "obey identity laws" in {
+      forAll { i: Int =>
+        val f = (i: Int) => Par.unit(i.toString)
+        val leftPar = compose(f, unit[String])(i)
+        val rightPar = compose(unit[Int], f)(i)
+
+        val executorService = Executors.newFixedThreadPool(2)
+        val fResult = Par.run(executorService)(f(i))
+        val left = Par.run(executorService)(leftPar)
+        val right = Par.run(executorService)(rightPar)
+
+        left should be(fResult)
+        right should be(fResult)
+      }
+    }
   }
 
   "parser" should {
-    import Monad.parser.compose
+    import Monad.parser.{compose, unit}
     "obey associative law" in {
       val f = (i: Int) => Parser.string(i.toString)
       val g = (s: String) => Parser.regex(s.r)
@@ -166,16 +198,32 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
         left should be(right)
       }
     }
+
+    "obey identity laws" in {
+      forAll { (i: Int, s: String) =>
+        val f = (i: Int) => Parser.string(i.toString)
+        val leftParser = compose(f, unit[String])(i)
+        val rightParser = compose(unit[Int], f)(i)
+
+        val fResult = f(i).parse(s)
+        val left = leftParser.parse(s)
+        val right = rightParser.parse(s)
+
+        left should be(fResult)
+        right should be(fResult)
+      }
+    }
   }
 
   "state" should {
     val monad = Monad.state[Rng]
-    import monad.compose
+    import monad.{compose, unit}
+    val rng = Rng.Simple(0)
+
     "obey associative law" in {
       val f = (i: Int) => State.unit[Rng, Int](i)
       val g = (i: Int) => State.sequence[Rng, String](List.fill(i.min(100))(State.unit[Rng, String](i.toString)))
       val h = (s: List[String]) => State.unit[Rng, String](s.mkString(", "))
-      val rng = Rng.Simple(0)
 
       forAll { i: Int =>
         val leftState = compose(compose(f, g), h)(i)
@@ -185,6 +233,53 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
         val right = rightState.run(rng)._1
 
         left should be(right)
+      }
+    }
+
+    "obey identity laws" in {
+      forAll { i: Int =>
+        val f = (i: Int) => State.unit[Rng, String](i.toString)
+        val leftState = compose(f, unit[String])(i)
+        val rightState = compose(unit[Int], f)(i)
+
+        val fResult = f(i).run(rng)._1
+        val left = leftState.run(rng)._1
+        val right = rightState.run(rng)._1
+
+        left should be(fResult)
+        right should be(fResult)
+      }
+    }
+  }
+
+  "flatMapViaCompose" should {
+    "give same results as flatMap" in {
+      forAll { i: Int =>
+        val list = List(i, i * 2, i + 5)
+        val f = (i: Int) => i.toString.toList
+
+        Monad.list.flatMapViaCompose(list)(f) should be(Monad.list.flatMap(list)(f))
+      }
+    }
+  }
+
+  checkIdentityLaws(Monad.option)((i: Int) => Some(i.toString))
+
+  checkIdentityLaws(Monad.list)((i: Int) => List(i.toString))
+
+  checkIdentityLaws(Monad.lazyList)((i: Int) => LazyList(i.toString))
+
+  def checkIdentityLaws[F[_], A, B]
+  (monad: Monad[F])
+  (f: A => F[B])
+  (implicit monadType: ClassTag[F[_]], arbitrary: Arbitrary[A]): Unit = {
+    s"Monad[$monadType]" should {
+      "obey identity laws" in {
+        import monad.{compose, unit}
+        forAll { a: A =>
+          compose(f, unit[B])(a) should be(f(a))
+          compose(unit[A], f)(a) should be(f(a))
+        }
       }
     }
   }

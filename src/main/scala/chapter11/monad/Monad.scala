@@ -39,6 +39,11 @@ trait Monad[F[_]] extends Functor[F] {
 
   def compose[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] =
     a => flatMap(f(a))(g)
+
+  def flatMapViaCompose[A, B](fa: F[A])(f: A => F[B]): F[B] = {
+    // Assumes that compose is not implemented via flatMap
+    compose(identity[F[A]], f)(fa)
+  }
 }
 
 object Monad {
