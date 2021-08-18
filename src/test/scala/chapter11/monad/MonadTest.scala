@@ -283,4 +283,38 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
       }
     }
   }
+
+  "join" when {
+    "given nested types" should {
+      "unwrap them" in {
+        val nested = List(List(1, 2), List(3, 4))
+
+        Monad.list.join(nested) should be(List(1, 2, 3, 4))
+      }
+    }
+  }
+
+  "flatMapViaJoinAndMap" should {
+    "give same results as flatMap" in {
+      forAll { i: Int =>
+        val list = List(i, i * 2, i + 5)
+        val f = (i: Int) => i.toString.toList
+
+        Monad.list.flatMapViaJoinAndMap(list)(f) should be(Monad.list.flatMap(list)(f))
+      }
+    }
+  }
+
+  "composeViaJoinAndMap" should {
+    "give same results as compose" in {
+      val function1 = (i: Int) => Some(i.toString)
+      val function2 = (s: String) => Some(s * 3)
+      val input = 5
+
+      val left = Monad.option.composeViaJoinAndMap(function1, function2)(input)
+      val right = Monad.option.compose(function1, function2)(input)
+
+      left should be(right)
+    }
+  }
 }
