@@ -11,11 +11,11 @@ trait Applicative[F[_]] extends Functor[F] {
     apply(unit(f))(fa)
 
   def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] =
-    apply(apply(unit(f.curried))(fa))(fb)
+    apply(map(fa)(f.curried))(fb)
 
   def map3[A, B, C, D](fa: F[A], fb: F[B], fc: F[C])(f: (A, B, C) => D): F[D] =
-    apply(apply(apply(unit(f.curried))(fa))(fb))(fc)
+    apply(map2(fa, fb)(f.curried(_)(_)))(fc)
 
   def map4[A, B, C, D, E](fa: F[A], fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
-    apply(apply(apply(apply(unit(f.curried))(fa))(fb))(fc))(fd)
+    apply(map3(fa, fb, fc)(f.curried(_)(_)(_)))(fd)
 }
