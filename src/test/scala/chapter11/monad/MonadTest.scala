@@ -90,6 +90,8 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
 
   checkAssociativeLaw(Monad.lazyList)((i: Int) => LazyList(i.toString))(s => LazyList.fill(5)(s))(s => LazyList.from(s.split("")))
 
+  checkAssociativeLaw(Monad.either[Int])((i: Int) => Right(i.toString))(s => Right((s, s)))(ss => Right(ss.swap.toString))
+
   def checkAssociativeLaw[F[_], A, B, C, D, E]
   (monad: Monad[F])
   (f: A => F[B])
@@ -268,6 +270,8 @@ class MonadTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyC
   checkIdentityLaws(Monad.list)((i: Int) => List(i.toString))
 
   checkIdentityLaws(Monad.lazyList)((i: Int) => LazyList(i.toString))
+
+  checkIdentityLaws(Monad.either[Int])((i: Int) => Right(i.toString))
 
   def checkIdentityLaws[F[_], A, B]
   (monad: Monad[F])

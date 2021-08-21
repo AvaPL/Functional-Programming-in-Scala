@@ -115,4 +115,12 @@ object Monad {
     override def flatMap[A, B](fa: State[S, A])(f: A => State[S, B]): State[S, B] =
       fa.flatMap(f)
   }
+
+  def either[E]: Monad[({type f[A] = Either[E, A]})#f] = new Monad[({type f[A] = Either[E, A]})#f] {
+    override def unit[A](a: A): Either[E, A] =
+      Right(a)
+
+    override def flatMap[A, B](fa: Either[E, A])(f: A => Either[E, B]): Either[E, B] =
+      fa.flatMap(f)
+  }
 }
