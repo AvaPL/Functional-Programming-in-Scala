@@ -55,102 +55,72 @@ class ApplicativeTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPro
 
     "laws" should {
       "obey identity law" in {
-        checkIdentityLaw(Applicative.validation[String])(validationGen(Gen.long, Gen.asciiStr))
+        checkIdentityLaw(
+          applicative = Applicative.validation[String]
+        )(
+          gen = validationGen(Gen.long, Gen.asciiStr)
+        )
       }
 
       "obey associativity law" in {
-        val applicative = Applicative.validation[String]
-        import applicative.{map, product}
-
-        val gen = for {
-          _1 <- validationGen(Gen.long, Gen.asciiStr)
-          _2 <- validationGen(Gen.asciiChar, Gen.numStr)
-          _3 <- validationGen(Gen.double, Gen.hexStr)
-        } yield (_1, _2, _3)
-
-        forAll(gen) {
-          case (_1, _2, _3) =>
-            val left = product(product(_1, _2), _3)
-            val right = map(product(_1, product(_2, _3))) {
-              case (a, (b, c)) => ((a, b), c) // Transform to match the structure of left
-            }
-
-            left should be(right)
-        }
+        checkAssociativityLaw(
+          applicative = Applicative.validation[String]
+        )(
+          gen1 = validationGen(Gen.long, Gen.asciiStr),
+          gen2 = validationGen(Gen.asciiChar, Gen.numStr),
+          gen3 = validationGen(Gen.double, Gen.hexStr)
+        )
       }
 
       "obey naturality law" in {
-        val applicative = Applicative.validation[String]
-        import applicative.{map, map2, product}
-
-        val gen = for {
-          _1 <- validationGen(Gen.long, Gen.asciiStr)
-          _2 <- validationGen(Gen.asciiChar, Gen.numStr)
-          f <- Gen.function1[Long, String](Gen.numStr)
-          g <- Gen.function1[Char, Int](Gen.size)
-        } yield (_1, _2, f, g)
-
-        forAll(gen) {
-          case (_1, _2, f, g) =>
-            map2(_1, _2)((a, b) => (f(a), g(b))) == product(map(_1)(f), map(_2)(g))
-        }
+        checkNaturalityLaw(
+          applicative = Applicative.validation[String]
+        )(
+          gen1 = validationGen(Gen.long, Gen.asciiStr),
+          gen2 = validationGen(Gen.asciiChar, Gen.numStr)
+        )(
+          genF = Gen.function1[Long, String](Gen.numStr),
+          genG = Gen.function1[Char, Int](Gen.size)
+        )
       }
     }
   }
 
   "product" when {
     "used on two applicatives" should {
-      "obey identity law" in {
-        val optionApplicative = Monad.option
-        val validationApplicative = Applicative.validation[String]
-        val productApplicative = optionApplicative.product(validationApplicative)
+      val product = Monad.option.product(Applicative.validation[String])
 
-        checkIdentityLaw(productApplicative)(tupleGen(Gen.option(Gen.long), validationGen(Gen.long, Gen.asciiStr)))
+      "obey identity law" in {
+        checkIdentityLaw(
+          applicative = product
+        )(
+          gen = tupleGen(Gen.option(Gen.long), validationGen(Gen.long, Gen.asciiStr))
+        )
       }
 
       "obey associativity law" in {
-        val optionApplicative = Monad.option
-        val validationApplicative = Applicative.validation[String]
-        val productApplicative = optionApplicative.product(validationApplicative)
-        import productApplicative.{map, product}
-
-        val gen = for {
-          _1 <- tupleGen(Gen.option(Gen.long), validationGen(Gen.long, Gen.asciiStr))
-          _2 <- tupleGen(Gen.option(Gen.asciiChar), validationGen(Gen.asciiChar, Gen.numStr))
-          _3 <- tupleGen(Gen.option(Gen.double), validationGen(Gen.double, Gen.hexStr))
-        } yield (_1, _2, _3)
-
-        forAll(gen) {
-          case (_1, _2, _3) =>
-            val left = product(product(_1, _2), _3)
-            val right = map(product(_1, product(_2, _3))) {
-              case (a, (b, c)) => ((a, b), c) // Transform to match the structure of left
-            }
-
-            left should be(right)
-        }
+        checkAssociativityLaw(
+          applicative = product
+        )(
+          gen1 = tupleGen(Gen.option(Gen.long), validationGen(Gen.long, Gen.asciiStr)),
+          gen2 = tupleGen(Gen.option(Gen.asciiChar), validationGen(Gen.asciiChar, Gen.numStr)),
+          gen3 = tupleGen(Gen.option(Gen.double), validationGen(Gen.double, Gen.hexStr))
+        )
       }
 
       "obey naturality law" in {
-        val optionApplicative = Monad.option
-        val validationApplicative = Applicative.validation[String]
-        val productApplicative = optionApplicative.product(validationApplicative)
-        import productApplicative.{product, map, map2}
-
-        val gen = for {
-          _1 <- tupleGen(Gen.option(Gen.long), validationGen(Gen.long, Gen.asciiStr))
-          _2 <- tupleGen(Gen.option(Gen.asciiChar), validationGen(Gen.asciiChar, Gen.numStr))
-          f <- Gen.function1[Long, String](Gen.numStr)
-          g <- Gen.function1[Char, Int](Gen.size)
-        } yield (_1, _2, f, g)
-
-        forAll(gen) {
-          case (_1, _2, f, g) =>
-            map2(_1, _2)((a, b) => (f(a), g(b))) == product(map(_1)(f), map(_2)(g))
-        }
+        checkNaturalityLaw(
+          applicative = product
+        )(
+          gen1 = tupleGen(Gen.option(Gen.long), validationGen(Gen.long, Gen.asciiStr)),
+          gen2 = tupleGen(Gen.option(Gen.asciiChar), validationGen(Gen.asciiChar, Gen.numStr))
+        )(
+          genF = Gen.function1[Long, String](Gen.numStr),
+          genG = Gen.function1[Char, Int](Gen.size)
+        )
       }
 
-      def tupleGen[T, U](gen1: Gen[T], gen2: Gen[U]) =
+      def tupleGen[T, U](gen1: Gen[T], gen2: Gen[U]): Gen[(T, U)] =
         for {
           _1 <- gen1
           _2 <- gen2
@@ -158,14 +128,44 @@ class ApplicativeTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPro
     }
   }
 
-  // TODO: Add test for compose
+  "compose" when {
+    "used on two applicatives" should {
+      val compose = Monad.option.compose(Applicative.validation[String])
 
-  // TODO: Generalise other laws via methods
+      "obey identity law" in {
+        checkIdentityLaw(
+          applicative = compose
+        )(
+          gen = optionValidationGen(Gen.long)
+        )
+      }
 
-  def checkIdentityLaw[F[_], A](applicative: Applicative[F])(gen: Gen[F[A]]): Assertion =
-    forAll(gen) { value =>
-      applicative.map(value)(identity) should be(value)
+      "obey associativity law" in {
+        checkAssociativityLaw(
+          applicative = compose
+        )(
+          gen1 = optionValidationGen(Gen.long),
+          gen2 = optionValidationGen(Gen.asciiChar),
+          gen3 = optionValidationGen(Gen.double)
+        )
+      }
+
+      "obey naturality law" in {
+        checkNaturalityLaw(
+          applicative = compose
+        )(
+          gen1 = optionValidationGen(Gen.long),
+          gen2 = optionValidationGen(Gen.asciiChar)
+        )(
+          genF = Gen.function1[Long, String](Gen.numStr),
+          genG = Gen.function1[Char, Int](Gen.size)
+        )
+      }
+
+      def optionValidationGen[T](gen: Gen[T]): Gen[Option[Validation[String, T]]] =
+        Gen.option(validationGen(gen, Gen.asciiStr))
     }
+  }
 
   def validationGen[A, E](successValue: Gen[A], failureValues: Gen[E]): Gen[Validation[E, A]] = {
     val successGen = successValue.map(Success(_))
@@ -176,6 +176,47 @@ class ApplicativeTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPro
     eitherGen.map {
       case Right(success) => success
       case Left(failure) => failure
+    }
+  }
+
+  def checkIdentityLaw[F[_], A](applicative: Applicative[F])(gen: Gen[F[A]]): Assertion =
+    forAll(gen) { value =>
+      applicative.map(value)(identity) should be(value)
+    }
+
+  def checkAssociativityLaw[F[_], A, B, C](applicative: Applicative[F])(gen1: Gen[F[A]], gen2: Gen[F[B]], gen3: Gen[F[C]]): Assertion = {
+    import applicative.{map, product}
+
+    val gen = for {
+      _1 <- gen1
+      _2 <- gen2
+      _3 <- gen3
+    } yield (_1, _2, _3)
+
+    forAll(gen) {
+      case (_1, _2, _3) =>
+        val left = product(product(_1, _2), _3)
+        val right = map(product(_1, product(_2, _3))) {
+          case (a, (b, c)) => ((a, b), c) // Transform to match the structure of left
+        }
+
+        left should be(right)
+    }
+  }
+
+  def checkNaturalityLaw[F[_], A, A1, B, B1](applicative: Applicative[F])(gen1: Gen[F[A]], gen2: Gen[F[B]])(genF: Gen[A => A1], genG: Gen[B => B1]): Assertion = {
+    import applicative.{product, map, map2}
+
+    val gen = for {
+      _1 <- gen1
+      _2 <- gen2
+      f <- genF
+      g <- genG
+    } yield (_1, _2, f, g)
+
+    forAll(gen) {
+      case (_1, _2, f, g) =>
+        map2(_1, _2)((a, b) => (f(a), g(b))) should be(product(map(_1)(f), map(_2)(g)))
     }
   }
 }
