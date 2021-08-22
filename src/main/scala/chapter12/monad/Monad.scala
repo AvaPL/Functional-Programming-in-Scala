@@ -2,7 +2,7 @@ package chapter12.monad
 
 import chapter12.applicative1.Applicative
 
-trait Monad[F[_]] extends Applicative[F]{
+trait Monad[F[_]] extends Applicative[F] {
   def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
 
   override def map[A, B](fa: F[A])(f: A => B): F[B] =
@@ -30,5 +30,15 @@ trait Monad[F[_]] extends Applicative[F]{
   def composeViaJoinAndMap[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = {
     // Assumes that join and map are not implemented via flatMap
     a => flatMapViaJoinAndMap(f(a))(g)
+  }
+}
+
+object Monad {
+  val option: Monad[Option] = new Monad[Option] {
+    override def unit[A](a: => A): Option[A] =
+      Some(a)
+
+    override def flatMap[A, B](fa: Option[A])(f: A => Option[B]): Option[B] =
+      fa.flatMap(f)
   }
 }

@@ -4,6 +4,7 @@ import chapter11.functor.Functor
 import chapter12.validation.{Failure, Success, Validation}
 
 trait Applicative[F[_]] extends Functor[F] {
+  self =>
   def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C]
 
   def unit[A](a: => A): F[A]
@@ -30,6 +31,22 @@ trait Applicative[F[_]] extends Functor[F] {
         case (false, acc) => acc
       }
     }
+
+  def product[G[_]](ag: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] = new Applicative[({type f[x] = (F[x], G[x])})#f] {
+    override def map2[A, B, C](fa: (F[A], G[A]), fb: (F[B], G[B]))(f: (A, B) => C): (F[C], G[C]) =
+      (self.map2(fa._1, fb._1)(f), ag.map2(fa._2, fb._2)(f))
+
+    override def unit[A](a: => A): (F[A], G[A]) =
+      (self.unit(a), ag.unit(a))
+  }
+
+  def compose[G[_]](ag: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] = new Applicative[({type f[x] = F[G[x]]})#f] {
+    override def map2[A, B, C](fa: F[G[A]], fb: F[G[B]])(f: (A, B) => C): F[G[C]] =
+      self.map2(fa, fb)(ag.map2(_, _)(f))
+
+    override def unit[A](a: => A): F[G[A]] =
+      self.unit(ag.unit(a))
+  }
 }
 
 object Applicative {
