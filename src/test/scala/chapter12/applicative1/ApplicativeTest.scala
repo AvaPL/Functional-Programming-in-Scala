@@ -1,7 +1,7 @@
 package chapter12.applicative1
 
 import chapter12.monad.Monad
-import chapter12.validation.{Failure, Success, Validation}
+import chapter12.{Failure, Success, Validation}
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
@@ -205,7 +205,7 @@ class ApplicativeTest extends AnyWordSpec with Matchers with ScalaCheckDrivenPro
   }
 
   def checkNaturalityLaw[F[_], A, A1, B, B1](applicative: Applicative[F])(gen1: Gen[F[A]], gen2: Gen[F[B]])(genF: Gen[A => A1], genG: Gen[B => B1]): Assertion = {
-    import applicative.{product, map, map2}
+    import applicative.{map, map2, product}
 
     val gen = for {
       _1 <- gen1

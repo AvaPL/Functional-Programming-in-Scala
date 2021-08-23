@@ -1,8 +1,9 @@
 package chapter12.applicative1
 
 import chapter11.functor.Functor
-import chapter12.validation.{Failure, Success, Validation}
+import chapter12.{Failure, Success, Validation}
 
+// map2 & unit defines Applicative
 trait Applicative[F[_]] extends Functor[F] {
   self =>
   def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C]

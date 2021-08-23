@@ -1,4 +1,4 @@
-package chapter12.validation
+package chapter12
 
 sealed trait Validation[+E, +A]
 

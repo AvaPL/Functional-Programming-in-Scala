@@ -2,6 +2,7 @@ package chapter12.applicative2
 
 import chapter11.functor.Functor
 
+// apply & unit defines Applicative
 trait Applicative[F[_]] extends Functor[F] {
   def apply[A, B](fab: F[A => B])(fa: F[A]): F[B]
 
