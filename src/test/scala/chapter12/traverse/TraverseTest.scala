@@ -67,4 +67,16 @@ class TraverseTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  "map" when {
+    "given a function" should {
+      "map values in list" in {
+        val list = List(1, 2, 3)
+
+        val result = Traverse.list.map(list)(_.toString)
+
+        result should be(List("1", "2", "3"))
+      }
+    }
+  }
 }

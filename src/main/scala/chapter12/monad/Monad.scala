@@ -1,5 +1,6 @@
 package chapter12.monad
 
+import chapter12.Identity
 import chapter12.applicative1.Applicative
 
 trait Monad[F[_]] extends Applicative[F] {
@@ -40,5 +41,11 @@ object Monad {
 
     override def flatMap[A, B](fa: Option[A])(f: A => Option[B]): Option[B] =
       fa.flatMap(f)
+  }
+
+  val identity: Monad[Identity] = new Monad[Identity] {
+    override def flatMap[A, B](fa: A)(f: A => B): B = f(fa)
+
+    override def unit[A](a: => A): A = a
   }
 }
