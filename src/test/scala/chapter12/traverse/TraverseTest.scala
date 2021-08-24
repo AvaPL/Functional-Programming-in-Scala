@@ -1,5 +1,6 @@
 package chapter12.traverse
 
+import chapter10.monoid.Monoid
 import chapter12.monad.Monad
 import chapter3.{Branch, Leaf}
 import org.scalatest.matchers.should.Matchers
@@ -80,5 +81,15 @@ class TraverseTest extends AnyWordSpec with Matchers {
     }
   }
 
-  // TODO: Add foldMap tests
+  "foldMap" when {
+    "used on a list" should {
+      "map it to single value" in {
+        val list = List(1, 2, 3)
+
+        val result = Traverse.list.foldMap(list)(Monoid.string)(_.toString)
+
+        result should be("123")
+      }
+    }
+  }
 }
