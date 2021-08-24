@@ -79,4 +79,6 @@ class TraverseTest extends AnyWordSpec with Matchers {
       }
     }
   }
+
+  // TODO: Add foldMap tests
 }

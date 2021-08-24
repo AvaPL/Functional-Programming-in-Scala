@@ -1,5 +1,6 @@
 package chapter12.traverse
 
+import chapter10.monoid.Monoid
 import chapter12.Identity
 import chapter12.applicative1.Applicative
 import chapter12.monad.Monad
@@ -13,6 +14,16 @@ trait Traverse[F[_]] {
 
   def map[A, B](fa: F[A])(f: A => B): F[B] =
     traverse(fa)(f(_): Identity[B])(Monad.identity)
+
+  def foldMap[T, U](fa: F[T])(monoid: Monoid[U])(f: T => U): U = {
+    type Const[A, B] = A
+    val monoidApplicative = new Applicative[({type f[x] = Const[U, x]})#f] {
+      override def map2[A, B, C](fa: U, fb: U)(f: (A, B) => C): U = monoid.op(fa, fb)
+
+      override def unit[A](a: => A): U = monoid.zero
+    }
+    traverse(fa)(f(_): Const[U, T])(monoidApplicative)
+  }
 }
 
 object Traverse {

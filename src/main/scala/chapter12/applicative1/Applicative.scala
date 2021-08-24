@@ -1,5 +1,6 @@
 package chapter12.applicative1
 
+import chapter10.monoid.Monoid
 import chapter11.functor.Functor
 import chapter12.{Failure, Success, Validation}
 
