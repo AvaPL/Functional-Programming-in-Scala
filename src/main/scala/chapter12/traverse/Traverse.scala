@@ -1,13 +1,14 @@
 package chapter12.traverse
 
 import chapter10.monoid.Monoid
-import chapter12.Identity
+import chapter12.{Const, Identity}
 import chapter12.applicative1.Applicative
 import chapter12.monad.Monad
 import chapter3.{Branch, Leaf, Tree}
 import chapter6.State
 
 trait Traverse[F[_]] {
+  self =>
   def traverse[G[_] : Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]]
 
   def sequence[G[_] : Applicative, A](fga: F[G[A]]): G[F[A]] =
@@ -16,15 +17,8 @@ trait Traverse[F[_]] {
   def map[A, B](fa: F[A])(f: A => B): F[B] =
     traverse(fa)(f(_): Identity[B])(Monad.identity)
 
-  def foldMap[T, U](fa: F[T])(monoid: Monoid[U])(f: T => U): U = {
-    type Const[A, B] = A
-    val monoidApplicative = new Applicative[({type f[x] = Const[U, x]})#f] {
-      override def map2[A, B, C](fa: U, fb: U)(f: (A, B) => C): U = monoid.op(fa, fb)
-
-      override def unit[A](a: => A): U = monoid.zero
-    }
-    traverse(fa)(f(_): Const[U, T])(monoidApplicative)
-  }
+  def foldMap[T, U](fa: F[T])(monoid: Monoid[U])(f: T => U): U =
+    traverse(fa)(f(_): Const[U, T])(Applicative(monoid))
 
   def traverseS[S, A, B](fa: F[A])(f: A => State[S, B]): State[S, F[B]] =
     traverse[({type f[x] = State[S, x]})#f, A, B](fa)(f)(Monad.state)
@@ -47,6 +41,14 @@ trait Traverse[F[_]] {
 
   def foldLeft[A, B](fa: F[A], z: B)(f: (B, A) => B): B =
     mapAccum(fa, z)((a, s) => ((), f(s, a)))._2
+
+  def fuse[G[_], H[_], A, B](fa: F[A])(f: A => G[B], g: A => H[B])(implicit ag: Applicative[G], ah: Applicative[H]): (G[F[B]], H[F[B]]) =
+    traverse[({type f[x] = (G[x], H[x])})#f, A, B](fa)(a => (f(a), g(a)))(ag.product(ah))
+
+  def compose[G[_]](tg: Traverse[G]): Traverse[({type f[x] = F[G[x]]})#f] = new Traverse[({type f[x] = F[G[x]]})#f] {
+    override def traverse[H[_] : Applicative, A, B](fa: F[G[A]])(f: A => H[B]): H[F[G[B]]] =
+      self.traverse(fa)(tg.traverse(_)(f))
+  }
 }
 
 object Traverse {

@@ -2,7 +2,7 @@ package chapter12.applicative1
 
 import chapter10.monoid.Monoid
 import chapter11.functor.Functor
-import chapter12.{Failure, Success, Validation}
+import chapter12.{Const, Failure, Success, Validation}
 
 // map2 & unit defines Applicative
 trait Applicative[F[_]] extends Functor[F] {
@@ -65,5 +65,13 @@ object Applicative {
           val tail = f1.tail ++: f2.head +: f2.tail
           Failure[E](head, tail: _*)
       }
+  }
+
+  def apply[T](monoid: Monoid[T]): Applicative[({type f[x] = Const[T, x]})#f] = {
+    new Applicative[({type f[x] = Const[T, x]})#f] {
+      override def map2[A, B, C](fa: T, fb: T)(f: (A, B) => C): T = monoid.op(fa, fb)
+
+      override def unit[A](a: => A): T = monoid.zero
+    }
   }
 }

@@ -1,6 +1,7 @@
 package chapter12.traverse
 
 import chapter10.monoid.Monoid
+import chapter12.applicative1.Applicative
 import chapter12.monad.Monad
 import chapter3.{Branch, Leaf}
 import org.scalatest.matchers.should.Matchers
@@ -139,6 +140,33 @@ class TraverseTest extends AnyWordSpec with Matchers with ScalaCheckPropertyChec
 
           left should be(right)
         }
+      }
+    }
+  }
+
+  "fuse" when {
+    "used on list and functions returning option and lazy list" should {
+      "return a tuple of (Option[List], LazyList[List])" in {
+        val list = List(1, 2, 3)
+
+        val result = Traverse.list.fuse(list)(Some(_): Option[Int], LazyList(_))(Monad.option, Monad.lazyList)
+
+        result should be((Some(List(1, 2, 3)), LazyList(List(1, 2, 3))))
+      }
+    }
+  }
+
+  "compose" when {
+    "given second traverse" should {
+      "create a composition of traverses" in {
+        val listTraverse = Traverse.list
+        val treeTraverse = Traverse.tree
+        val composedTraverse = listTraverse.compose(treeTraverse)
+
+        val listOfTrees = List(Branch(1, 3), Leaf(5))
+        val sum = composedTraverse.foldLeft(listOfTrees, 0)(_ + _)
+
+        sum should be(9)
       }
     }
   }

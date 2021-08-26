@@ -44,6 +44,14 @@ object Monad {
       fa.flatMap(f)
   }
 
+  val lazyList: Monad[LazyList] = new Monad[LazyList] {
+    override def unit[A](a: => A): LazyList[A] =
+      LazyList(a)
+
+    override def flatMap[A, B](fa: LazyList[A])(f: A => LazyList[B]): LazyList[B] =
+      fa.flatMap(f)
+  }
+
   val identity: Monad[Identity] = new Monad[Identity] {
     override def flatMap[A, B](fa: A)(f: A => B): B = f(fa)
 
