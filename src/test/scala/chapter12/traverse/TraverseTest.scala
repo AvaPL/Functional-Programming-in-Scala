@@ -5,8 +5,9 @@ import chapter12.monad.Monad
 import chapter3.{Branch, Leaf}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class TraverseTest extends AnyWordSpec with Matchers {
+class TraverseTest extends AnyWordSpec with Matchers with ScalaCheckPropertyChecks {
   implicit val optionApplicative: Monad[Option] = Monad.option
 
   "list" when {
@@ -89,6 +90,55 @@ class TraverseTest extends AnyWordSpec with Matchers {
         val result = Traverse.list.foldMap(list)(Monoid.string)(_.toString)
 
         result should be("123")
+      }
+    }
+  }
+
+  "reverse" when {
+    "used on a list" should {
+      "reverse it" in {
+        val list = List(1, 2, 3)
+
+        val result = Traverse.list.reverse(list)
+
+        result should be(List(3, 2, 1))
+      }
+    }
+
+    "used on two lists" should {
+      "have homomorphism with toList" in {
+        forAll { (list1: List[Int], list2: List[Int]) =>
+          import Traverse.list.{toList, reverse}
+
+          val left = toList(reverse(list1)) ++ toList(reverse(list2))
+          val right = reverse(toList(list2) ++ toList(list1))
+
+          left should be(right)
+        }
+      }
+    }
+  }
+
+  "foldLeft" when {
+    "used on a list" should {
+      "be an equivalent of foldLeft list method" in {
+        forAll { list: List[Int] =>
+          val left = Traverse.list.foldLeft(list, 0)(_ + _)
+          val right = list.foldLeft(0)(_ + _)
+
+          left should be(right)
+        }
+      }
+    }
+
+    "used on an option" should {
+      "be an equivalent of fold option method" in {
+        forAll { option: Option[Int] =>
+          val left = Traverse.option.foldLeft(option, 0)(_ + _)
+          val right = option.fold(0)(identity)
+
+          left should be(right)
+        }
       }
     }
   }

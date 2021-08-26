@@ -2,6 +2,7 @@ package chapter12.monad
 
 import chapter12.Identity
 import chapter12.applicative1.Applicative
+import chapter6.State
 
 trait Monad[F[_]] extends Applicative[F] {
   def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
@@ -47,5 +48,13 @@ object Monad {
     override def flatMap[A, B](fa: A)(f: A => B): B = f(fa)
 
     override def unit[A](a: => A): A = a
+  }
+
+  def state[S]: Monad[({type f[A] = State[S, A]})#f] = new Monad[({type f[A] = State[S, A]})#f] {
+    override def unit[A](a: => A): State[S, A] =
+      State.unit(a)
+
+    override def flatMap[A, B](fa: State[S, A])(f: A => State[S, B]): State[S, B] =
+      fa.flatMap(f)
   }
 }

@@ -5,6 +5,7 @@ import chapter12.Identity
 import chapter12.applicative1.Applicative
 import chapter12.monad.Monad
 import chapter3.{Branch, Leaf, Tree}
+import chapter6.State
 
 trait Traverse[F[_]] {
   def traverse[G[_] : Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]]
@@ -24,6 +25,28 @@ trait Traverse[F[_]] {
     }
     traverse(fa)(f(_): Const[U, T])(monoidApplicative)
   }
+
+  def traverseS[S, A, B](fa: F[A])(f: A => State[S, B]): State[S, F[B]] =
+    traverse[({type f[x] = State[S, x]})#f, A, B](fa)(f)(Monad.state)
+
+  def mapAccum[S, A, B](fa: F[A], s: S)(f: (A, S) => (B, S)): (F[B], S) =
+    traverseS(fa)((a: A) => for {
+      s1 <- State.get[S]
+      (b, s2) = f(a, s1)
+      _ <- State.set(s2)
+    } yield b).run(s)
+
+  def toList[A](fa: F[A]): List[A] =
+    mapAccum(fa, List[A]())((a, s) => ((), a :: s))._2.reverse
+
+  def zipWithIndex[A](fa: F[A]): F[(A, Int)] =
+    mapAccum(fa, 0)((a, s) => ((a, s), s + 1))._1
+
+  def reverse[A](fa: F[A]): F[A] =
+    mapAccum(fa, toList(fa).reverse)((_, list) => (list.head, list.tail))._1
+
+  def foldLeft[A, B](fa: F[A], z: B)(f: (B, A) => B): B =
+    mapAccum(fa, z)((a, s) => ((), f(s, a)))._2
 }
 
 object Traverse {
