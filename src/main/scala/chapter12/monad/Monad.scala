@@ -2,9 +2,11 @@ package chapter12.monad
 
 import chapter12.Identity
 import chapter12.applicative1.Applicative
+import chapter12.traverse.Traverse
 import chapter6.State
 
 trait Monad[F[_]] extends Applicative[F] {
+  self =>
   def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
 
   override def map[A, B](fa: F[A])(f: A => B): F[B] =
@@ -32,6 +34,14 @@ trait Monad[F[_]] extends Applicative[F] {
   def composeViaJoinAndMap[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] = {
     // Assumes that join and map are not implemented via flatMap
     a => flatMapViaJoinAndMap(f(a))(g)
+  }
+
+  def composeM[G[_]](mg: Monad[G])(tg: Traverse[G]): Monad[({type f[x] = F[G[x]]})#f] = new Monad[({type f[x] = F[G[x]]})#f] {
+    override def flatMap[A, B](fa: F[G[A]])(f: A => F[G[B]]): F[G[B]] =
+      self.flatMap(fa)(ga => self.map(tg.traverse(ga)(f)(self))(mg.join))
+
+    override def unit[A](a: => A): F[G[A]] =
+      self.unit(mg.unit(a))
   }
 }
 
